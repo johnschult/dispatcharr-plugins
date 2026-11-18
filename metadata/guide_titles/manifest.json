@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "slug": "guide_titles",
+    "name": "Guide Titles",
+    "description": "Rewrites programme titles in the guide by rule after each EPG refresh: moves the matchup into the title when the source puts only the sport there, turns \"at\" into \"vs\" and adds a sport emoji. Edits the source's own programmes in place and keeps the originals, so channels stay mapped to the real source and a rule that stops working leaves plain titles, never an empty guide.",
+    "author": "johnschult",
+    "license": "MIT",
+    "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_name": "Schultiverse",
+    "last_updated": "2026-11-18T12:49:10Z",
+    "latest": {
+      "version": "0.1.0",
+      "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+      "commit_sha_short": "b64bd80",
+      "build_timestamp": "2026-11-18T12:49:10Z",
+      "last_updated": "2026-11-18T12:49:10Z",
+      "checksum_md5": "b2dc043ced6743b5b9532b5628a0ace5",
+      "checksum_sha256": "600a5d25f5cc2fb1c4baafbd685803708f0a89b7887548364b9d53e6725123a0",
+      "min_dispatcharr_version": "v0.34.0",
+      "url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
+      "latest_url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
+      "size": 12
+    },
+    "versions": [
+      {
+        "version": "0.1.0",
+        "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+        "commit_sha_short": "b64bd80",
+        "build_timestamp": "2026-11-18T12:49:10Z",
+        "last_updated": "2026-11-18T12:49:10Z",
+        "checksum_md5": "b2dc043ced6743b5b9532b5628a0ace5",
+        "checksum_sha256": "600a5d25f5cc2fb1c4baafbd685803708f0a89b7887548364b9d53e6725123a0",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
+        "latest_url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
+        "size": 12
+      }
+    ]
+  }
+}

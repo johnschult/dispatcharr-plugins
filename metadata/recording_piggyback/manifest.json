@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "slug": "recording_piggyback",
+    "name": "Recording Piggyback",
+    "description": "While a channel is recording, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+    "author": "johnschult",
+    "license": "MIT",
+    "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_name": "Schultiverse",
+    "last_updated": "2026-11-18T12:49:10Z",
+    "latest": {
+      "version": "0.1.1",
+      "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+      "commit_sha_short": "b64bd80",
+      "build_timestamp": "2026-11-18T12:49:10Z",
+      "last_updated": "2026-11-18T12:49:10Z",
+      "checksum_md5": "25ec32ed6a9b8f382e8eab9726481f11",
+      "checksum_sha256": "e1056eef908004db9b650e18606f15d9fcb134b6ce2ca4887f8af0e7b5843e1d",
+      "min_dispatcharr_version": "v0.34.0",
+      "url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
+      "latest_url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
+      "size": 11
+    },
+    "versions": [
+      {
+        "version": "0.1.1",
+        "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+        "commit_sha_short": "b64bd80",
+        "build_timestamp": "2026-11-18T12:49:10Z",
+        "last_updated": "2026-11-18T12:49:10Z",
+        "checksum_md5": "25ec32ed6a9b8f382e8eab9726481f11",
+        "checksum_sha256": "e1056eef908004db9b650e18606f15d9fcb134b6ce2ca4887f8af0e7b5843e1d",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
+        "latest_url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
+        "size": 11
+      }
+    ]
+  }
+}

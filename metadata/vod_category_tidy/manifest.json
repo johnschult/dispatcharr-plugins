@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "slug": "vod_category_tidy",
+    "name": "VOD Category Tidy",
+    "description": "Cleans up movie and series categories for Xtream Codes apps: strips prefixes like \"Movie-\" and \"Series-\" and merges overlapping categories, and hides categories by word. Only what apps see changes; Dispatcharr keeps the provider's categories, so refreshes are unaffected.",
+    "author": "johnschult",
+    "license": "MIT",
+    "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
+    "registry_name": "Schultiverse",
+    "last_updated": "2026-11-18T12:49:10Z",
+    "latest": {
+      "version": "0.2.2",
+      "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+      "commit_sha_short": "b64bd80",
+      "build_timestamp": "2026-11-18T12:49:10Z",
+      "last_updated": "2026-11-18T12:49:10Z",
+      "checksum_md5": "a755e5f2b551fc33043acb18cafb3db8",
+      "checksum_sha256": "2e14d111e9899f155796289a058eda95f07358fdd5689fa56a03c43090cf1590",
+      "min_dispatcharr_version": "v0.34.0",
+      "url": "vod_category_tidy-0.2.2/vod_category_tidy-0.2.2.zip",
+      "latest_url": "vod_category_tidy-0.2.2/vod_category_tidy-0.2.2.zip",
+      "size": 11
+    },
+    "versions": [
+      {
+        "version": "0.2.2",
+        "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
+        "commit_sha_short": "b64bd80",
+        "build_timestamp": "2026-11-18T12:49:10Z",
+        "last_updated": "2026-11-18T12:49:10Z",
+        "checksum_md5": "a755e5f2b551fc33043acb18cafb3db8",
+        "checksum_sha256": "2e14d111e9899f155796289a058eda95f07358fdd5689fa56a03c43090cf1590",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "vod_category_tidy-0.2.2/vod_category_tidy-0.2.2.zip",
+        "latest_url": "vod_category_tidy-0.2.2/vod_category_tidy-0.2.2.zip",
+        "size": 11
+      }
+    ]
+  }
+}
