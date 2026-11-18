@@ -155,3 +155,59 @@ def test_root_manifest_lists_each_plugins_latest(tmp_path):
     assert p["latest_sha256"] == latest["checksum_sha256"]
     assert p["latest_size"] == latest["size"]
     assert p["min_dispatcharr_version"] == MIN_DISPATCHARR
+
+
+# Signing: Dispatcharr verifies a detached GPG signature over json.dumps(manifest, separators=(",", ":"))
+# plus a newline (apps/plugins/api_views.py, _verify_manifest_signature), stored next to "manifest".
+
+def test_canonical_bytes_are_what_dispatcharr_verifies():
+    from publish import canonical
+
+    m = {"b": 1, "a": "🏈 vs", "list": [1, 2]}
+    assert canonical(m) == (json.dumps(m, separators=(",", ":")) + "\n").encode("utf-8")
+    assert canonical(m) == b'{"b":1,"a":"\\ud83c\\udfc8 vs","list":[1,2]}\n'
+
+
+def test_write_manifests_signs_every_file(tmp_path):
+    from publish import canonical, write_manifests
+
+    make_plugin(tmp_path / "plugins", "guide_titles")
+    result = build(tmp_path / "plugins", {}, COMMIT, WHEN)
+    signed = []
+
+    def signer(data):
+        signed.append(data)
+        return f"SIG({len(data)})"
+
+    write_manifests(tmp_path / "releases", result.metadata, signer)
+
+    root = json.loads((tmp_path / "releases" / "manifest.json").read_text())
+    meta = json.loads((tmp_path / "releases" / "metadata" / "guide_titles" / "manifest.json").read_text())
+    assert root["signature"] == f"SIG({len(canonical(root['manifest']))})"
+    assert meta["signature"] == f"SIG({len(canonical(meta['manifest']))})"
+    assert sorted(signed) == sorted([canonical(root["manifest"]), canonical(meta["manifest"])])
+
+
+def test_write_manifests_without_a_signer_writes_no_signature(tmp_path):
+    from publish import write_manifests
+
+    make_plugin(tmp_path / "plugins", "guide_titles")
+    result = build(tmp_path / "plugins", {}, COMMIT, WHEN)
+
+    write_manifests(tmp_path / "releases", result.metadata, None)
+
+    assert "signature" not in json.loads((tmp_path / "releases" / "manifest.json").read_text())
+
+
+def test_previous_signature_is_dropped_and_redone(tmp_path):
+    from publish import write_manifests
+
+    make_plugin(tmp_path / "plugins", "guide_titles")
+    first = build(tmp_path / "plugins", {}, COMMIT, WHEN)
+    old = {k: {**v, "signature": "OLD"} for k, v in first.metadata.items()}
+    again = build(tmp_path / "plugins", old, COMMIT, WHEN)
+
+    write_manifests(tmp_path / "releases", again.metadata, lambda data: "NEW")
+
+    meta = json.loads((tmp_path / "releases" / "metadata" / "guide_titles" / "manifest.json").read_text())
+    assert meta["signature"] == "NEW"
