@@ -11,8 +11,11 @@ In Dispatcharr, add this plugin repository:
 https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/manifest.json
 ```
 
-The plugins then show in Dispatcharr's plugin browser, and updates arrive there too. The repository isn't
-signed, so Dispatcharr shows it as unverified.
+The plugins then show in Dispatcharr's plugin browser, and updates arrive there too.
+
+The manifests are signed. To have Dispatcharr check them, paste [`signing-key.asc`](signing-key.asc) into the
+repository's public key in Dispatcharr's repo settings; it then shows the repository as verified, and a manifest
+that doesn't match the key as failing.
 
 ## Plugins
 
@@ -82,6 +85,12 @@ plugin's ZIP (`publish/publish.py`), attaches it to a GitHub release tagged `<sl
 `manifest.json` and `metadata/<slug>/manifest.json` on the `releases` branch, which is what Dispatcharr reads.
 ZIPs are built byte-for-byte repeatably, and a plugin whose files changed without a version bump stops the
 publish rather than replacing a released version.
+
+Every manifest it writes carries a detached GPG signature over the bytes Dispatcharr checks
+(`json.dumps(manifest, separators=(",", ":"))` plus a newline), made with the key in the `SIGNING_KEY` Actions
+secret. The workflow refuses to publish without that secret, or if it doesn't match `signing-key.asc`. The
+private key exists only in the secret; to replace it, generate a new key, put its private half in `SIGNING_KEY`
+and its public half in `signing-key.asc`, push, and paste the new public key into Dispatcharr.
 
 ## License
 

@@ -8,12 +8,14 @@ than published under a version that already means something else.
     python publish/publish.py --plugins plugins --releases <releases checkout> --dist dist --commit <sha>
 
 reads and rewrites the manifests in --releases, writes new ZIPs to --dist, and prints one
-"<tag> <zip path>" line per new release for the workflow to upload.
+"<tag> <zip path>" line per new release for the workflow to upload. With --sign <key>, each manifest
+gets a detached GPG signature that Dispatcharr checks against the repo's public key.
 """
 import argparse
 import hashlib
 import io
 import json
+import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -159,9 +161,36 @@ def root_manifest(metadata):
     }}
 
 
+def canonical(manifest):
+    """The bytes Dispatcharr verifies a signature over: compact JSON in key order, ASCII-escaped,
+    plus a newline (apps/plugins/api_views.py, _verify_manifest_signature)."""
+    return (json.dumps(manifest, separators=(",", ":")) + "\n").encode("utf-8")
+
+
+def gpg_signer(key):
+    """A signer making armored detached signatures with the gpg key `key`."""
+    def sign(data):
+        return subprocess.run(
+            ["gpg", "--batch", "--yes", "--armor", "--detach-sign", "--local-user", key],
+            input=data, capture_output=True, check=True,
+        ).stdout.decode("ascii")
+    return sign
+
+
 def _write_json(path, doc):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _document(manifest, signer):
+    return {"manifest": manifest, "signature": signer(canonical(manifest))} if signer else {"manifest": manifest}
+
+
+def write_manifests(releases, metadata, signer=None):
+    """Write each plugin's manifest and the root manifest, signed when given a signer."""
+    for slug, doc in metadata.items():
+        _write_json(releases / "metadata" / slug / "manifest.json", _document(doc["manifest"], signer))
+    _write_json(releases / "manifest.json", _document(root_manifest(metadata)["manifest"], signer))
 
 
 def main(argv=None):
@@ -170,6 +199,7 @@ def main(argv=None):
     ap.add_argument("--releases", type=Path, required=True, help="checkout of the releases branch")
     ap.add_argument("--dist", type=Path, required=True)
     ap.add_argument("--commit", required=True)
+    ap.add_argument("--sign", metavar="KEY", help="gpg key to sign the manifests with")
     args = ap.parse_args(argv)
 
     meta_dir = args.releases / "metadata"
@@ -186,9 +216,7 @@ def main(argv=None):
         out = args.dist / f"{r.tag}.zip"
         out.write_bytes(r.data)
         print(f"{r.tag} {out}")
-    for slug, doc in result.metadata.items():
-        _write_json(meta_dir / slug / "manifest.json", doc)
-    _write_json(args.releases / "manifest.json", root_manifest(result.metadata))
+    write_manifests(args.releases, result.metadata, gpg_signer(args.sign) if args.sign else None)
     return 0
 
 
