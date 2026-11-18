@@ -1,0 +1,73 @@
+# Tests every push and pull request; on main, then publishes any plugin whose version is new
+# (see README "Releasing").
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Dispatcharr image to test against instead of IMAGE (publishing is skipped)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: ./test.sh unit
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: unit
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./test.sh integration
+        env:
+          DISPATCHARR_IMAGE: ${{ inputs.image }}
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [unit, integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency: publish
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the releases branch
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads origin releases >/dev/null; then
+            git clone --quiet --depth 1 --branch releases "$url" releases
+          else
+            git init --quiet -b releases releases
+            git -C releases remote add origin "$url"
+          fi
+      - name: Build
+        run: python3 publish/publish.py --plugins plugins --releases releases --dist dist --commit "$GITHUB_SHA" | tee new.txt
+      - name: Release new versions
+        run: |
+          while read -r tag zip; do
+            [ -n "$tag" ] || continue
+            gh release create "$tag" "$zip" --target "$GITHUB_SHA" --title "$tag" \
+              --notes "Install from the plugin repository: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/releases/manifest.json"
+          done < new.txt
+      - name: Update the manifests
+        working-directory: releases
+        run: |
+          git add -A
+          if git diff --cached --quiet; then echo "manifests unchanged"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Publish from ${GITHUB_SHA::7}"
+          git push --quiet origin releases

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 2,
+  "name": "VOD Category Tidy",
+  "version": "0.2.2",
+  "description": "Cleans up movie and series categories for Xtream Codes apps: strips prefixes like \"Movie-\" and \"Series-\" and merges overlapping categories, and hides categories by word. Only what apps see changes; Dispatcharr keeps the provider's categories, so refreshes are unaffected.",
+  "author": "johnschult",
+  "capabilities": [],
+  "fields": [
+    {
+      "id": "strip_pattern",
+      "label": "Prefix to strip",
+      "type": "string",
+      "default": "^(Movies?|Series)\\s*-\\s*",
+      "help_text": "A regular expression removed from the start of category names that no merge rule covers. Empty keeps names as they are."
+    },
+    {
+      "id": "rules",
+      "label": "Merge rules",
+      "type": "text",
+      "default": "Action & Adventure = Movie-Action, Movie-Adventure, Series-Action, Series-Adventure, Series-Action & Adventure\nSci-Fi & Fantasy = Movie-Sci-Fi, Movie-Fantasy, Series-Sci-Fi & Fantasy, Series-Fantasy\nKids & Family = Movie-Family, Movies-Kids, Series-Kids, Series-Family\nDrama = Movie-Drama, Movie-Romance, Movie-TV Movie, Series-Drama, Series-Soap, Series-Romance\nThriller & Mystery = Movie-Thriller, Movie-Mystery, Series-Mystery, Series-Thriller, Series-Horror\nDocumentary = Movie-Documentary, Movie-History, Movie-War, Series-Documentary, Series-History, Series-War & Politics, Series-News\nMusic = Movie-Music, Movies-Concerts, Movies-Music festivals, Series-Music\nFights = UFC Main Events, Movies-UFC Fight Nights, WWE Boxing, WWE Main Event, Movies-Other Sports Replays\nSpecials = Movies-Netflix, Movies-HBO, Movies-Lifetime, Sports Series",
+      "help_text": "One line per category apps should see: \"Name = Provider category, Provider category\". Movie and series categories are matched by their provider names, so one line can cover both. Lines starting with # are ignored."
+    },
+    {
+      "id": "hide_words",
+      "label": "Hide categories containing",
+      "type": "text",
+      "default": "Server, CAM, Uncategorized, Arabic, Turkey, Turkish, French, Bollywood, Ramadan, Multi-Lang, Multi-Sub, Greece, Spanish, Italian, Germany, Korean, Egypt, Iraq, Kuwait, Saudi, Syria",
+      "help_text": "Comma-separated words or phrases, matched as whole words and ignoring case, against both the provider's name and the shown name. A matching category disappears from apps along with its titles."
+    }
+  ],
+  "actions": [
+    {
+      "id": "preview",
+      "label": "Preview categories",
+      "description": "Show the movie and series categories apps will see with the current settings.",
+      "button_label": "Preview"
+    }
+  ]
+}

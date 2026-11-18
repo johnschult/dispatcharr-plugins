@@ -1,0 +1,88 @@
+# Dispatcharr plugins
+
+Plugins for [Dispatcharr](https://github.com/Dispatcharr/Dispatcharr), and a plugin repository to install them
+from. They need Dispatcharr 0.34.0 or newer.
+
+## Install
+
+In Dispatcharr, add this plugin repository:
+
+```text
+https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/manifest.json
+```
+
+The plugins then show in Dispatcharr's plugin browser, and updates arrive there too. The repository isn't
+signed, so Dispatcharr shows it as unverified.
+
+## Plugins
+
+### Guide Titles
+
+Rewrites programme titles in the guide by rule after each EPG refresh. Typical use: Schedules Direct titles a game
+"College Football" and puts the matchup in the sub-title; Guide Titles swaps them, turns "at" into "vs" and puts a
+sport emoji in front, so the guide reads "🏈  Ohio State vs Michigan".
+
+It edits the source's own programmes in place and keeps their original fields, so channels stay mapped to the
+real source (Schedules Direct only downloads stations a channel maps to) and every run starts from the
+originals. If a rule stops matching, titles fall back to the source's; the guide never empties.
+
+Rules go in its settings, under one `[EPG source name]` line per source:
+
+```text
+[Schedules Direct]
+swap_subtitle::^College Football$::
+prefix_sport::^College Football$::🏈
+```
+
+| Rule | Does |
+|---|---|
+| `swap_subtitle::TITLE_RE::` | swaps title and sub-title when the title matches |
+| `swap_description::TITLE_RE::EXTRACT_RE` | takes the title from the description (EXTRACT_RE's first group) |
+| `regex::RE::REPLACEMENT` | regex replace on the title; `$1`, `$2` for groups |
+| `replace::TEXT::REPLACEMENT` | plain replace on the title |
+| `prefix_sport::RE::EMOJI` | puts EMOJI in front when the title or sub-title matches; team sports get "vs" |
+
+The default rules cover the common sports in Schedules Direct and EPG Share titles.
+
+### Recording Piggyback
+
+While a channel records, other channels carrying the same provider stream play through the recording's
+connection instead of opening another one: handy when a provider allows few connections. A programme set to
+record gets a 🔴 after its title and "🔴 Recording" in its description, from when it's scheduled until it ends.
+It works alongside Guide Titles: the two take turns, and the mark sits on top of the rewritten title.
+
+### VOD Category Tidy
+
+Cleans up movie and series categories for Xtream Codes apps: strips prefixes like "Movie-" and "Series-", merges
+overlapping categories by rule, and hides categories containing given words. Only what apps see changes;
+Dispatcharr keeps the provider's categories, so refreshes are unaffected.
+
+## Development
+
+Each plugin keeps its logic in a module with no Dispatcharr imports (`titles.py`, `piggyback.py`, `tidy.py`) and
+the Dispatcharr side in `plugin.py`.
+
+```sh
+./test.sh              # unit + integration
+./test.sh unit         # each plugin's tests/ (and the publisher's), with uv
+./test.sh integration  # each plugin's integration/, inside Dispatcharr (Docker, ~5 minutes)
+```
+
+The integration tests start a throwaway container of the Dispatcharr image in `IMAGE` (it bundles Postgres and
+Redis), copy the plugins into `/data/plugins` and run pytest-django there. The plugins load through Dispatcharr's
+own PluginManager, so discovery, enabling, event wiring and each `plugin.py` run against real models, and each
+published ZIP goes through Dispatcharr's own installer. To try another Dispatcharr version:
+`DISPATCHARR_IMAGE=ghcr.io/dispatcharr/dispatcharr@sha256:… ./test.sh integration`, or the workflow's Run
+workflow button. `CONTAINER=<name>` reuses a running container (started with `-v /data`) for quicker reruns.
+
+## Releasing
+
+Bump `version` in a plugin's `plugin.json` and push to `main`. Once the tests pass, the workflow builds that
+plugin's ZIP (`publish/publish.py`), attaches it to a GitHub release tagged `<slug>-<version>`, and updates
+`manifest.json` and `metadata/<slug>/manifest.json` on the `releases` branch, which is what Dispatcharr reads.
+ZIPs are built byte-for-byte repeatably, and a plugin whose files changed without a version bump stops the
+publish rather than replacing a released version.
+
+## License
+
+MIT
