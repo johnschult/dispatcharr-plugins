@@ -22,17 +22,17 @@
       {
         "slug": "recording_piggyback",
         "name": "Recording Piggyback",
-        "description": "While a channel is recording, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+        "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
         "author": "johnschult",
         "license": "MIT",
         "manifest_url": "https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/metadata/recording_piggyback/manifest.json",
-        "latest_version": "0.1.1",
-        "latest_url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
-        "latest_sha256": "e1056eef908004db9b650e18606f15d9fcb134b6ce2ca4887f8af0e7b5843e1d",
-        "latest_md5": "25ec32ed6a9b8f382e8eab9726481f11",
-        "latest_size": 11,
+        "latest_version": "0.2.0",
+        "latest_url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
+        "latest_sha256": "1ba13a0c6abca56fc4457d6e1ec1afe9191e4cd00bb74f946535ee30842f34d6",
+        "latest_md5": "f200b660b277de8bff00cfd149be1cb7",
+        "latest_size": 13,
         "min_dispatcharr_version": "v0.34.0",
-        "last_updated": "2026-11-18T12:49:10Z"
+        "last_updated": "2026-11-22T15:21:42Z"
       },
       {
         "slug": "vod_category_tidy",
@@ -51,5 +51,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCav2kpgAKCRDvBpyEbmuY\n0Wx7AQDX4+LXeJos71qDACW/k1/6rKB167u1eUlw09cNYup7vQEAiIo/sKmW2BjD\nO3MVL6cfhnq7gmdHmbGCVqfIHT8otAg=\n=He/m\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMIhgAKCRDvBpyEbmuY\n0dmVAQCANMXWZoxSD+LG/HWDuN4jRAO7nHWkGdjZSs5t5FWpGgD/frLH9nbF8Xne\nscQCNK2erVNUwKG6egXrJcFeZIlcXAY=\n=N4Xy\n-----END PGP SIGNATURE-----\n"
 }

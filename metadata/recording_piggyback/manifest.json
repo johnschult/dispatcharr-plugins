@@ -2,27 +2,40 @@
   "manifest": {
     "slug": "recording_piggyback",
     "name": "Recording Piggyback",
-    "description": "While a channel is recording, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+    "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
     "author": "johnschult",
     "license": "MIT",
     "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_name": "Schultiverse",
-    "last_updated": "2026-11-18T12:49:10Z",
+    "last_updated": "2026-11-22T15:21:42Z",
     "latest": {
-      "version": "0.1.1",
-      "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
-      "commit_sha_short": "b64bd80",
-      "build_timestamp": "2026-11-18T12:49:10Z",
-      "last_updated": "2026-11-18T12:49:10Z",
-      "checksum_md5": "25ec32ed6a9b8f382e8eab9726481f11",
-      "checksum_sha256": "e1056eef908004db9b650e18606f15d9fcb134b6ce2ca4887f8af0e7b5843e1d",
+      "version": "0.2.0",
+      "commit_sha": "d4558f009c6b4c63d21109f543460732f3f334b5",
+      "commit_sha_short": "d4558f0",
+      "build_timestamp": "2026-11-22T15:21:42Z",
+      "last_updated": "2026-11-22T15:21:42Z",
+      "checksum_md5": "f200b660b277de8bff00cfd149be1cb7",
+      "checksum_sha256": "1ba13a0c6abca56fc4457d6e1ec1afe9191e4cd00bb74f946535ee30842f34d6",
       "min_dispatcharr_version": "v0.34.0",
-      "url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
-      "latest_url": "recording_piggyback-0.1.1/recording_piggyback-0.1.1.zip",
-      "size": 11
+      "url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
+      "latest_url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
+      "size": 13
     },
     "versions": [
+      {
+        "version": "0.2.0",
+        "commit_sha": "d4558f009c6b4c63d21109f543460732f3f334b5",
+        "commit_sha_short": "d4558f0",
+        "build_timestamp": "2026-11-22T15:21:42Z",
+        "last_updated": "2026-11-22T15:21:42Z",
+        "checksum_md5": "f200b660b277de8bff00cfd149be1cb7",
+        "checksum_sha256": "1ba13a0c6abca56fc4457d6e1ec1afe9191e4cd00bb74f946535ee30842f34d6",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
+        "latest_url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
+        "size": 13
+      },
       {
         "version": "0.1.1",
         "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
@@ -38,5 +51,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCav2kpgAKCRDvBpyEbmuY\n0UKFAP9sci0btx6ijOjas2LWabDvrhi5QvSaEpKmAcXH4OUQewEA/APluqJzj/uI\n0A2NuFuHaU8KAz9LO5CnV/2JyOIvJAk=\n=mjJO\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMIhgAKCRDvBpyEbmuY\n0fT4AQC0Ey7jZb9NbIxFS2dPTp+cb+gu8pQ3xkHy3Z9NxKfHFgEA6X2qRDtcISWD\nl/rbVP2EFaBb7TNqXJCnRPutMTOBpQs=\n=M96J\n-----END PGP SIGNATURE-----\n"
 }
