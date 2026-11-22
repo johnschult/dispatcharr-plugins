@@ -8,21 +8,34 @@
     "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_name": "Schultiverse",
-    "last_updated": "2026-11-18T12:49:10Z",
+    "last_updated": "2026-11-22T15:42:07Z",
     "latest": {
-      "version": "0.1.0",
-      "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
-      "commit_sha_short": "b64bd80",
-      "build_timestamp": "2026-11-18T12:49:10Z",
-      "last_updated": "2026-11-18T12:49:10Z",
-      "checksum_md5": "b2dc043ced6743b5b9532b5628a0ace5",
-      "checksum_sha256": "600a5d25f5cc2fb1c4baafbd685803708f0a89b7887548364b9d53e6725123a0",
+      "version": "0.1.1",
+      "commit_sha": "18cb29b14ffde5202071ef35d2cb3df77908657b",
+      "commit_sha_short": "18cb29b",
+      "build_timestamp": "2026-11-22T15:42:07Z",
+      "last_updated": "2026-11-22T15:42:07Z",
+      "checksum_md5": "c7a397b26bbe06d815f2e4af005ced94",
+      "checksum_sha256": "53f0cc58b5398d58d7b0f3a2126b50ee2d4d6cc6e73a3fcaadfb15e6035d8363",
       "min_dispatcharr_version": "v0.34.0",
-      "url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
-      "latest_url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
+      "url": "guide_titles-0.1.1/guide_titles-0.1.1.zip",
+      "latest_url": "guide_titles-0.1.1/guide_titles-0.1.1.zip",
       "size": 12
     },
     "versions": [
+      {
+        "version": "0.1.1",
+        "commit_sha": "18cb29b14ffde5202071ef35d2cb3df77908657b",
+        "commit_sha_short": "18cb29b",
+        "build_timestamp": "2026-11-22T15:42:07Z",
+        "last_updated": "2026-11-22T15:42:07Z",
+        "checksum_md5": "c7a397b26bbe06d815f2e4af005ced94",
+        "checksum_sha256": "53f0cc58b5398d58d7b0f3a2126b50ee2d4d6cc6e73a3fcaadfb15e6035d8363",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "guide_titles-0.1.1/guide_titles-0.1.1.zip",
+        "latest_url": "guide_titles-0.1.1/guide_titles-0.1.1.zip",
+        "size": 12
+      },
       {
         "version": "0.1.0",
         "commit_sha": "b64bd80d531e024b1221b5fba7a9c5d5b934be5e",
@@ -38,5 +51,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMIhgAKCRDvBpyEbmuY\n0RCHAPoDN9HgWkD+Gy3fugseEzxLIxSSBUny0S2qckJ6AxPXCwEA6qBVGFg65CRI\n46wDnXdgcaKPknULGiZpjHp++mB7JQY=\n=E+Zk\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMNTwAKCRDvBpyEbmuY\n0UsSAQDSH12wFUVO4pq3nSJ2t+EOImbaxW6P7eG/xxIyYurOdAEA4WeDzd4cRzZB\nnlp7BOHPw3aMzerPbZ3lCBZPtLZSegY=\n=0uJ0\n-----END PGP SIGNATURE-----\n"
 }

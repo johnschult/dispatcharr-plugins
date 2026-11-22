@@ -11,28 +11,28 @@
         "author": "johnschult",
         "license": "MIT",
         "manifest_url": "https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/metadata/guide_titles/manifest.json",
-        "latest_version": "0.1.0",
-        "latest_url": "guide_titles-0.1.0/guide_titles-0.1.0.zip",
-        "latest_sha256": "600a5d25f5cc2fb1c4baafbd685803708f0a89b7887548364b9d53e6725123a0",
-        "latest_md5": "b2dc043ced6743b5b9532b5628a0ace5",
+        "latest_version": "0.1.1",
+        "latest_url": "guide_titles-0.1.1/guide_titles-0.1.1.zip",
+        "latest_sha256": "53f0cc58b5398d58d7b0f3a2126b50ee2d4d6cc6e73a3fcaadfb15e6035d8363",
+        "latest_md5": "c7a397b26bbe06d815f2e4af005ced94",
         "latest_size": 12,
         "min_dispatcharr_version": "v0.34.0",
-        "last_updated": "2026-11-18T12:49:10Z"
+        "last_updated": "2026-11-22T15:42:07Z"
       },
       {
         "slug": "recording_piggyback",
         "name": "Recording Piggyback",
-        "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+        "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a mark in the guide.",
         "author": "johnschult",
         "license": "MIT",
         "manifest_url": "https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/metadata/recording_piggyback/manifest.json",
-        "latest_version": "0.2.0",
-        "latest_url": "recording_piggyback-0.2.0/recording_piggyback-0.2.0.zip",
-        "latest_sha256": "1ba13a0c6abca56fc4457d6e1ec1afe9191e4cd00bb74f946535ee30842f34d6",
-        "latest_md5": "f200b660b277de8bff00cfd149be1cb7",
-        "latest_size": 13,
+        "latest_version": "0.2.1",
+        "latest_url": "recording_piggyback-0.2.1/recording_piggyback-0.2.1.zip",
+        "latest_sha256": "66d3a7b5f0d1009baed5b183994897a8bf86cc3670947d93742f1e3c855557be",
+        "latest_md5": "a4cca516ab4b07270f281ff7c3ef0a32",
+        "latest_size": 14,
         "min_dispatcharr_version": "v0.34.0",
-        "last_updated": "2026-11-22T15:21:42Z"
+        "last_updated": "2026-11-22T15:42:07Z"
       },
       {
         "slug": "vod_category_tidy",
@@ -51,5 +51,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMIhgAKCRDvBpyEbmuY\n0dmVAQCANMXWZoxSD+LG/HWDuN4jRAO7nHWkGdjZSs5t5FWpGgD/frLH9nbF8Xne\nscQCNK2erVNUwKG6egXrJcFeZIlcXAY=\n=N4Xy\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMNTwAKCRDvBpyEbmuY\n0S3uAQDQviJSam6FGKC1ZNSZ1cVjEaTlB7afVTJZ4/VkE+ZqMwEA4lwBNal2UtSZ\np4Hz0tYrscB0crzUGAInYBcOh65kyAo=\n=Wtvv\n-----END PGP SIGNATURE-----\n"
 }
