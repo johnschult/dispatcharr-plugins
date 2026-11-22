@@ -1,10 +1,12 @@
 {
   "manifest_version": 2,
   "name": "Recording Piggyback",
-  "version": "0.1.1",
-  "description": "While a channel is recording, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+  "version": "0.2.0",
+  "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
   "author": "johnschult",
-  "capabilities": [],
+  "capabilities": [
+    "outbound_network"
+  ],
   "fields": [
     {
       "id": "mark_guide",
@@ -19,18 +21,34 @@
       "type": "string",
       "default": "🆚 Matchups",
       "help_text": "Comma-separated channel group names. Teamarr resets the streams on its own Matchups channels every hour, so adding a piggyback there just gets undone; they're hidden anyway."
+    },
+    {
+      "id": "sportarr_url",
+      "label": "Sportarr address",
+      "type": "string",
+      "default": "",
+      "placeholder": "http://192.168.68.115:1867",
+      "help_text": "Sportarr records through Dispatcharr like any other viewer, so its recordings never reach Dispatcharr's DVR. With its address and API key, they get the same piggybacks and red dots. Empty: Dispatcharr's own recordings only."
+    },
+    {
+      "id": "sportarr_api_key",
+      "label": "Sportarr API key",
+      "type": "string",
+      "default": "",
+      "help_text": "Sportarr's Settings → General → API Key."
     }
   ],
   "actions": [
     {
       "id": "sync",
       "label": "Sync now",
-      "description": "Line up piggybacks and guide marks with the recordings running right now. Runs on its own when a recording starts or ends, a channel starts, or the M3U or EPG refreshes.",
+      "description": "Line up piggybacks and guide marks with the recordings running right now. Runs on its own when a recording starts or ends, a channel starts or stops (Sportarr tuning in or hanging up), or the M3U or EPG refreshes.",
       "button_label": "Sync",
       "events": [
         "recording_start",
         "recording_end",
         "channel_start",
+        "channel_stop",
         "m3u_refresh",
         "epg_refresh"
       ]

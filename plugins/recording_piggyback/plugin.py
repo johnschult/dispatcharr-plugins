@@ -7,13 +7,18 @@ its original title and description in custom_properties["piggyback_original"].
 import json
 import logging
 import time
+import urllib.error
+import urllib.request
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 try:
-    from .piggyback import PREFIX, TERMINAL, Recorded, is_active, loopback_name, loopback_target, marked, overlaps, plan
+    from .piggyback import (PREFIX, TERMINAL, Recorded, from_sportarr, is_active, loopback_name, loopback_target,
+                            marked, overlaps, plan)
 except ImportError:  # loaded as a top-level module
-    from piggyback import PREFIX, TERMINAL, Recorded, is_active, loopback_name, loopback_target, marked, overlaps, plan
+    from piggyback import (PREFIX, TERMINAL, Recorded, from_sportarr, is_active, loopback_name, loopback_target,
+                           marked, overlaps, plan)
 
 _MANIFEST = json.loads((Path(__file__).parent / "plugin.json").read_text(encoding="utf-8"))
 _DEFAULTS = {f["id"]: f.get("default") for f in _MANIFEST["fields"]}
@@ -23,7 +28,8 @@ ORIGINAL = "piggyback_original"
 LOCK_KEY = 7431002
 SLACK = timedelta(minutes=2)
 MARK_AHEAD = timedelta(days=7)  # how far ahead scheduled recordings get the guide mark
-CHANNEL_START_MIN_GAP = 20  # seconds; channel_start fires often, and a sync is a few queries
+CHANNEL_EVENT_MIN_GAP = 20  # seconds; channel events fire often, and a sync is a few queries
+SPORTARR_TIMEOUT = 5  # seconds per request; a sync waits on it
 log = logging.getLogger("plugins.recording_piggyback")
 # Celery workers start with the root logger at WARNING, and every event runs us in one,
 # so without this a sync's summary line never reaches the log
@@ -31,18 +37,50 @@ log.setLevel(logging.INFO)
 _last_run = {"at": 0.0}
 
 
-def _active_recordings(now):
+def _sportarr_get(settings, path):
+    url = (settings.get("sportarr_url") or "").rstrip("/") + path
+    req = urllib.request.Request(url, headers={"X-Api-Key": settings.get("sportarr_api_key") or "",
+                                               "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=SPORTARR_TIMEOUT) as resp:
+        return json.load(resp)
+
+
+def _sportarr_recordings(settings):
+    """Sportarr's unfinished recordings, shaped like Dispatcharr's (channel, start_time, end_time,
+    status), plus a note for the sync message. Sportarr being down never stops a sync."""
+    if not settings.get("sportarr_url"):
+        return [], ""
+    try:
+        windows = from_sportarr(_sportarr_get(settings, "/api/dvr/recordings"),
+                                _sportarr_get(settings, "/api/iptv/channels"))
+    except urllib.error.HTTPError as e:
+        log.warning("Recording Piggyback: Sportarr answered %s", e.code)
+        return [], f" Sportarr answered {e.code}."
+    except Exception as e:
+        log.warning("Recording Piggyback: could not read Sportarr: %s", e)
+        return [], f" Could not read Sportarr: {type(e).__name__}."
+    from apps.channels.models import Channel
+    channels = {str(c.uuid).lower(): c for c in Channel.objects.filter(uuid__in={w.uuid for w in windows})}
+    recs = [SimpleNamespace(channel=channels[w.uuid], channel_id=channels[w.uuid].id, start_time=w.start,
+                            end_time=w.end, status=w.status)
+            for w in windows if w.uuid in channels]
+    return recs, f" Sportarr: {len(recs)} scheduled or recording."
+
+
+def _active_recordings(now, sportarr=()):
     from apps.channels.models import Recording
     rows = Recording.objects.filter(start_time__lte=now + SLACK, end_time__gte=now - SLACK).select_related("channel")
-    return [r for r in rows if is_active((r.custom_properties or {}).get("status"), r.start_time, r.end_time, now)]
+    ours = [r for r in rows if is_active((r.custom_properties or {}).get("status"), r.start_time, r.end_time, now)]
+    return ours + [r for r in sportarr if is_active(r.status, r.start_time, r.end_time, now)]
 
 
-def _scheduled_recordings(now):
+def _scheduled_recordings(now, sportarr=()):
     """Recordings that are running or still to come: marked in the guide ahead of time, because
     apps like Zaply only reload the guide about once an hour."""
     from apps.channels.models import Recording
     rows = Recording.objects.filter(end_time__gte=now - SLACK, start_time__lte=now + MARK_AHEAD).select_related("channel")
-    return [r for r in rows if (r.custom_properties or {}).get("status") not in TERMINAL]
+    ours = [r for r in rows if (r.custom_properties or {}).get("status") not in TERMINAL]
+    return ours + [r for r in sportarr if r.end_time >= now - SLACK and r.start_time <= now + MARK_AHEAD]
 
 
 def _skip_groups(settings):
@@ -128,11 +166,12 @@ def sync(settings):
     from django.utils import timezone
     from apps.channels.tasks import get_dvr_stream_base_url
 
+    sportarr, note = _sportarr_recordings(settings)  # before taking the lock: it's a network call
     with transaction.atomic():
         with connection.cursor() as cur:
             cur.execute("SELECT pg_advisory_xact_lock(%s)", [LOCK_KEY])
         now = timezone.now()
-        recordings = _active_recordings(now)
+        recordings = _active_recordings(now, sportarr)
         provider = _provider_streams(_skip_groups(settings), keep={r.channel_id for r in recordings})
         recorded = [
             Recorded(r.channel_id, str(r.channel.uuid), r.channel.name, frozenset(provider.get(r.channel_id, ())))
@@ -144,7 +183,7 @@ def sync(settings):
             from apps.channels.models import Stream
             Stream.objects.filter(id__in=strays).delete()
         _apply(p, get_dvr_stream_base_url())
-        guide = _mark_guide(_scheduled_recordings(now), settings.get("mark_guide", True))
+        guide = _mark_guide(_scheduled_recordings(now, sportarr), settings.get("mark_guide", True))
     if guide:
         try:
             from apps.output.streaming_chunk_cache import invalidate_epg_chunk_cache
@@ -155,13 +194,13 @@ def sync(settings):
         log.info("Recording Piggyback: %s recording, +%s piggybacks, -%s, %s guide changes",
                  len(recordings), len(p.add), len(p.remove) + len(strays), guide)
     return (f"{len(recordings)} recording now; added {len(p.add)} piggyback(s), removed "
-            f"{len(p.remove) + len(strays)}; {guide} guide program(s) updated.")
+            f"{len(p.remove) + len(strays)}; {guide} guide program(s) updated.{note}")
 
 
-def status():
+def status(settings):
     from django.utils import timezone
     from apps.channels.models import Channel
-    recordings = _active_recordings(timezone.now())
+    recordings = _active_recordings(timezone.now(), _sportarr_recordings(settings)[0])
     existing, _ = _piggybacks()
     lines = []
     for r in recordings:
@@ -186,11 +225,11 @@ class Plugin:
         settings = {**_DEFAULTS, **((context or {}).get("settings") or {})}
         try:
             if action == "status":
-                return {"status": "ok", "message": status()}
+                return {"status": "ok", "message": status(settings)}
             if action != "sync":
                 return {"status": "error", "message": f"Unknown action {action!r}"}
             event = (params or {}).get("event")
-            if event == "channel_start" and time.monotonic() - _last_run["at"] < CHANNEL_START_MIN_GAP:
+            if event in ("channel_start", "channel_stop") and time.monotonic() - _last_run["at"] < CHANNEL_EVENT_MIN_GAP:
                 return {"status": "ok", "message": "Synced recently."}
             _last_run["at"] = time.monotonic()
             return {"status": "ok", "message": sync(settings)}

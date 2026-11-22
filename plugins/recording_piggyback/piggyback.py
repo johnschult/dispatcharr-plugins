@@ -6,6 +6,7 @@ of R, so tuning C becomes one more client of R instead of a second provider conn
 """
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 PREFIX = "Piggyback → "
 TERMINAL = {"completed", "stopped", "interrupted", "failed", "cancelled", "canceled", "error"}
@@ -100,3 +101,50 @@ def plan(recorded, provider_streams, piggybacks):
         if not has:
             add.append((channel_id, r))
     return Plan(add=tuple(sorted(add, key=lambda a: a[0])), remove=tuple(sorted(remove)))
+
+
+# Sportarr records through Dispatcharr's proxy as an ordinary client, so its recordings never show up
+# in Dispatcharr's own table; they're read from its API instead.
+SPORTARR_DONE = TERMINAL | {"imported", "importing", "ignored"}
+# Sportarr sometimes stores a game's end a day late; no game runs this long, and uncapped the red dot
+# would cover the channel's next day of programmes
+SPORTARR_MAX_SPAN = timedelta(hours=8)
+
+
+@dataclass(frozen=True)
+class Window:
+    uuid: str  # the Dispatcharr channel being recorded
+    start: datetime
+    end: datetime
+    status: str
+
+
+def _when(value):
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def from_sportarr(recordings, channels):
+    """Sportarr's unfinished recordings as Dispatcharr channel windows, padding included.
+
+    recordings: Sportarr's /api/dvr/recordings. channels: its /api/iptv/channels, whose stream URLs
+    are Dispatcharr's proxy URLs and so name the channel's uuid; a channel from anywhere else is skipped.
+    """
+    uuids = {}
+    for ch in channels:
+        uuid = loopback_target(ch.get("streamUrl"))
+        if uuid:
+            uuids[ch.get("id")] = uuid
+    out = []
+    for r in recordings:
+        status = (r.get("status") or "").lower()
+        uuid = uuids.get(r.get("channelId"))
+        start, end = _when(r.get("scheduledStart")), _when(r.get("scheduledEnd"))
+        if status in SPORTARR_DONE or not uuid or not start or not end:
+            continue
+        start -= timedelta(minutes=r.get("prePadding") or 0)
+        end = min(end + timedelta(minutes=r.get("postPadding") or 0), start + SPORTARR_MAX_SPAN)
+        out.append(Window(uuid=uuid, start=start, end=end, status=status))
+    return out

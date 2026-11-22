@@ -153,3 +153,59 @@ def test_lowest_channel_id_wins_when_two_record_the_same_feed():
 def test_recording_without_provider_streams_carries_no_one():
     p = plan([rec(1, UUID_A, set())], {1: set(), 2: {10}}, {})
     assert p.add == ()
+
+
+# Sportarr's recordings
+
+from piggyback import Window, from_sportarr
+
+SPORTARR_CHANNELS = [
+    {"id": 181, "name": "Big Ten Network", "streamUrl": f"http://192.168.68.115:9191/proxy/ts/stream/{UUID_A}"},
+    {"id": 198, "name": "NCAA W Volleyball | Purdue", "streamUrl": f"http://dispatcharr:9191/proxy/ts/stream/{UUID_B}"},
+    {"id": 7, "name": "Elsewhere", "streamUrl": "http://provider.example/live/1.ts"},
+]
+
+
+def sportarr(id=1, channel=181, status="Scheduled", start="2026-11-18T19:00:00Z", end="2026-11-18T21:00:00Z",
+             pre=5, post=30):
+    return {"id": id, "channelId": channel, "status": status, "scheduledStart": start, "scheduledEnd": end,
+            "prePadding": pre, "postPadding": post}
+
+
+def test_sportarr_recording_becomes_its_dispatcharr_channel_and_padded_window():
+    assert from_sportarr([sportarr()], SPORTARR_CHANNELS) == [
+        Window(uuid=UUID_A.lower(), start=T0 - timedelta(minutes=5), end=T0 + 2 * H + timedelta(minutes=30),
+               status="scheduled"),
+    ]
+
+
+def test_sportarr_channel_found_by_its_stream_url_not_its_name():
+    (w,) = from_sportarr([sportarr(channel=198)], SPORTARR_CHANNELS)
+    assert w.uuid == UUID_B.lower()
+
+
+def test_sportarr_recording_on_a_channel_not_from_dispatcharr_is_skipped():
+    assert from_sportarr([sportarr(channel=7), sportarr(id=2, channel=999)], SPORTARR_CHANNELS) == []
+
+
+def test_finished_sportarr_recordings_are_skipped():
+    done = ["Completed", "Imported", "Importing", "Ignored", "Failed", "Cancelled", "Stopped"]
+    assert from_sportarr([sportarr(id=i, status=s) for i, s in enumerate(done)], SPORTARR_CHANNELS) == []
+
+
+def test_running_sportarr_recording_counts_as_recording():
+    (w,) = from_sportarr([sportarr(status="Recording")], SPORTARR_CHANNELS)
+    assert w.status == "recording" and is_active(w.status, w.start, w.end, T0 + 10 * H)
+
+
+def test_sportarr_window_is_capped():
+    # Sportarr sometimes stores a football game's end a day late; uncapped, the red dot would cover
+    # the channel's next 24 hours of programmes
+    (w,) = from_sportarr([sportarr(end="2026-11-19T19:00:00Z", post=0)], SPORTARR_CHANNELS)
+    assert w.end - w.start == timedelta(hours=8)
+
+
+def test_sportarr_recording_without_padding_or_with_bad_times():
+    bad = sportarr(id=2, start="soon", end=None)
+    (w,) = from_sportarr([{**sportarr(), "prePadding": None, "postPadding": None}, bad], SPORTARR_CHANNELS)
+    assert (w.start, w.end) == (T0, T0 + 2 * H)

@@ -54,6 +54,13 @@ connection instead of opening another one: handy when a provider allows few conn
 record gets a 🔴 after its title and "🔴 Recording" in its description, from when it's scheduled until it ends.
 It works alongside Guide Titles: the two take turns, and the mark sits on top of the rewritten title.
 
+It reads recordings from Dispatcharr's own DVR, and from Sportarr when given its address and API key. Sportarr
+records through Dispatcharr's proxy like any other viewer, so its recordings never reach Dispatcharr's DVR; the
+plugin reads them from Sportarr's API and finds each one's Dispatcharr channel from the stream URL Sportarr has for
+it. It syncs when a channel starts or stops (Sportarr tuning in and hanging up) and on every M3U and EPG refresh.
+If Sportarr can't be reached, Dispatcharr's own recordings still sync. Reading Sportarr needs the "Access external
+network services" permission.
+
 ### VOD Category Tidy
 
 Cleans up movie and series categories for Xtream Codes apps: strips prefixes like "Movie-" and "Series-", merges
