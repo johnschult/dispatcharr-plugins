@@ -8,21 +8,34 @@
     "repo_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_url": "https://github.com/johnschult/dispatcharr-plugins",
     "registry_name": "Schultiverse",
-    "last_updated": "2026-11-22T15:42:07Z",
+    "last_updated": "2026-11-22T16:08:33Z",
     "latest": {
-      "version": "0.2.1",
-      "commit_sha": "18cb29b14ffde5202071ef35d2cb3df77908657b",
-      "commit_sha_short": "18cb29b",
-      "build_timestamp": "2026-11-22T15:42:07Z",
-      "last_updated": "2026-11-22T15:42:07Z",
-      "checksum_md5": "a4cca516ab4b07270f281ff7c3ef0a32",
-      "checksum_sha256": "66d3a7b5f0d1009baed5b183994897a8bf86cc3670947d93742f1e3c855557be",
+      "version": "0.2.2",
+      "commit_sha": "452223e180b35b57aaade7300feea54786d57022",
+      "commit_sha_short": "452223e",
+      "build_timestamp": "2026-11-22T16:08:33Z",
+      "last_updated": "2026-11-22T16:08:33Z",
+      "checksum_md5": "71ef8cbf7c85952597c38dc275b131e0",
+      "checksum_sha256": "d1c049b766688e78850fae4348545b41a410b59c16bf6d276ab41271e5fb308f",
       "min_dispatcharr_version": "v0.34.0",
-      "url": "recording_piggyback-0.2.1/recording_piggyback-0.2.1.zip",
-      "latest_url": "recording_piggyback-0.2.1/recording_piggyback-0.2.1.zip",
+      "url": "recording_piggyback-0.2.2/recording_piggyback-0.2.2.zip",
+      "latest_url": "recording_piggyback-0.2.2/recording_piggyback-0.2.2.zip",
       "size": 14
     },
     "versions": [
+      {
+        "version": "0.2.2",
+        "commit_sha": "452223e180b35b57aaade7300feea54786d57022",
+        "commit_sha_short": "452223e",
+        "build_timestamp": "2026-11-22T16:08:33Z",
+        "last_updated": "2026-11-22T16:08:33Z",
+        "checksum_md5": "71ef8cbf7c85952597c38dc275b131e0",
+        "checksum_sha256": "d1c049b766688e78850fae4348545b41a410b59c16bf6d276ab41271e5fb308f",
+        "min_dispatcharr_version": "v0.34.0",
+        "url": "recording_piggyback-0.2.2/recording_piggyback-0.2.2.zip",
+        "latest_url": "recording_piggyback-0.2.2/recording_piggyback-0.2.2.zip",
+        "size": 14
+      },
       {
         "version": "0.2.1",
         "commit_sha": "18cb29b14ffde5202071ef35d2cb3df77908657b",
@@ -64,5 +77,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMNTwAKCRDvBpyEbmuY\n0QZxAP4vbM4FaxdOOkUxnJSflnzFyF3iQyxboBZ9fGPLI/AAiwEAqlQTRn9RNLQN\nYLMzzxnHyF8PgD5CPzKfcfJPY0LTmQo=\n=Q4R7\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMTgQAKCRDvBpyEbmuY\n0XtfAP9pzXqfwhFwfiXg/HCrggjAj8qI4m07F1dR5H1t2E5TzgEAoK1ZdO9Gh4ES\njKHtaG6gLupl67j+9ehw8wy71K5fVQM=\n=cTOt\n-----END PGP SIGNATURE-----\n"
 }

@@ -26,13 +26,13 @@
         "author": "johnschult",
         "license": "MIT",
         "manifest_url": "https://raw.githubusercontent.com/johnschult/dispatcharr-plugins/releases/metadata/recording_piggyback/manifest.json",
-        "latest_version": "0.2.1",
-        "latest_url": "recording_piggyback-0.2.1/recording_piggyback-0.2.1.zip",
-        "latest_sha256": "66d3a7b5f0d1009baed5b183994897a8bf86cc3670947d93742f1e3c855557be",
-        "latest_md5": "a4cca516ab4b07270f281ff7c3ef0a32",
+        "latest_version": "0.2.2",
+        "latest_url": "recording_piggyback-0.2.2/recording_piggyback-0.2.2.zip",
+        "latest_sha256": "d1c049b766688e78850fae4348545b41a410b59c16bf6d276ab41271e5fb308f",
+        "latest_md5": "71ef8cbf7c85952597c38dc275b131e0",
         "latest_size": 14,
         "min_dispatcharr_version": "v0.34.0",
-        "last_updated": "2026-11-22T15:42:07Z"
+        "last_updated": "2026-11-22T16:08:33Z"
       },
       {
         "slug": "vod_category_tidy",
@@ -51,5 +51,5 @@
       }
     ]
   },
-  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMNTwAKCRDvBpyEbmuY\n0S3uAQDQviJSam6FGKC1ZNSZ1cVjEaTlB7afVTJZ4/VkE+ZqMwEA4lwBNal2UtSZ\np4Hz0tYrscB0crzUGAInYBcOh65kyAo=\n=Wtvv\n-----END PGP SIGNATURE-----\n"
+  "signature": "-----BEGIN PGP SIGNATURE-----\n\niHUEABYKAB0WIQSE0pFp1L6bMuSSKO7vBpyEbmuY0QUCawMTgQAKCRDvBpyEbmuY\n0QouAP9V5XoLDIe4WstvURjlN61CB8VloovL6nPhjUX3DfDHawEAqtbTDYvlpBNK\nG1K4pcK2n72CPub6D2XWnAdl3nwGaQo=\n=m/vC\n-----END PGP SIGNATURE-----\n"
 }
