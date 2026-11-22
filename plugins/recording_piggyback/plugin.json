@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Recording Piggyback",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
   "author": "johnschult",
   "capabilities": [
@@ -23,18 +23,34 @@
       "help_text": "Comma-separated channel group names. Teamarr resets the streams on its own Matchups channels every hour, so adding a piggyback there just gets undone; they're hidden anyway."
     },
     {
+      "id": "use_sportarr",
+      "label": "Use Sportarr's recordings too",
+      "type": "boolean",
+      "default": false,
+      "help_text": "Sportarr records through Dispatcharr like any other viewer, so its recordings never reach Dispatcharr's DVR. Switch this on, and set Sportarr's address and API key under Sportarr below, to give them the same piggybacks and red dots."
+    },
+    {
+      "id": "sportarr",
+      "label": "Sportarr",
+      "type": "section",
+      "collapsed": true
+    },
+    {
       "id": "sportarr_url",
       "label": "Sportarr address",
       "type": "string",
       "default": "",
       "placeholder": "http://192.168.68.115:1867",
-      "help_text": "Sportarr records through Dispatcharr like any other viewer, so its recordings never reach Dispatcharr's DVR. With its address and API key, they get the same piggybacks and red dots. Empty: Dispatcharr's own recordings only."
+      "section": "sportarr",
+      "help_text": "Sportarr's channels must come from Dispatcharr's M3U, so their stream URLs name Dispatcharr channels. Test Sportarr checks it."
     },
     {
       "id": "sportarr_api_key",
       "label": "Sportarr API key",
       "type": "string",
+      "input_type": "password",
       "default": "",
+      "section": "sportarr",
       "help_text": "Sportarr's Settings → General → API Key."
     }
   ],
@@ -58,6 +74,12 @@
       "label": "Status",
       "description": "Show recordings running now and which channels ride them.",
       "button_label": "Status"
+    },
+    {
+      "id": "test_sportarr",
+      "label": "Test Sportarr",
+      "description": "Check that Sportarr answers and accepts the key, count its recordings, and name any whose channel can't be matched to a Dispatcharr channel.",
+      "button_label": "Test"
     }
   ]
 }

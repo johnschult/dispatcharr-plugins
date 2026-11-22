@@ -209,3 +209,25 @@ def test_sportarr_recording_without_padding_or_with_bad_times():
     bad = sportarr(id=2, start="soon", end=None)
     (w,) = from_sportarr([{**sportarr(), "prePadding": None, "postPadding": None}, bad], SPORTARR_CHANNELS)
     assert (w.start, w.end) == (T0, T0 + 2 * H)
+
+
+# Why a Sportarr recording can't be matched (for "Test Sportarr")
+
+from piggyback import NOT_DISPATCHARR, NO_SUCH_SPORTARR_CHANNEL, unmatched
+
+
+def test_every_recording_matched_means_nothing_to_report():
+    assert unmatched([sportarr(), sportarr(id=2, channel=198)], SPORTARR_CHANNELS) == []
+
+
+def test_channel_whose_stream_is_not_from_dispatcharr_is_named():
+    assert unmatched([sportarr(channel=7)], SPORTARR_CHANNELS) == [("Elsewhere", NOT_DISPATCHARR)]
+
+
+def test_recording_on_a_channel_sportarr_no_longer_lists():
+    assert unmatched([sportarr(channel=999)], SPORTARR_CHANNELS) == [("Sportarr channel 999", NO_SUCH_SPORTARR_CHANNEL)]
+
+
+def test_each_unmatched_channel_is_named_once_and_finished_recordings_are_ignored():
+    recs = [sportarr(id=1, channel=7), sportarr(id=2, channel=7), sportarr(id=3, channel=999, status="Completed")]
+    assert unmatched(recs, SPORTARR_CHANNELS) == [("Elsewhere", NOT_DISPATCHARR)]

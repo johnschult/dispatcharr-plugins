@@ -148,3 +148,28 @@ def from_sportarr(recordings, channels):
         end = min(end + timedelta(minutes=r.get("postPadding") or 0), start + SPORTARR_MAX_SPAN)
         out.append(Window(uuid=uuid, start=start, end=end, status=status))
     return out
+
+
+NOT_DISPATCHARR = "its stream isn't from Dispatcharr"
+NO_SUCH_SPORTARR_CHANNEL = "Sportarr no longer lists the channel"
+NO_SUCH_DISPATCHARR_CHANNEL = "Dispatcharr has no such channel"
+
+
+def unmatched(recordings, channels):
+    """[(channel name, reason)] for the channels of unfinished Sportarr recordings that from_sportarr
+    has to skip, each named once, in the order first seen."""
+    by_id = {ch.get("id"): ch for ch in channels}
+    out = []
+    for r in recordings:
+        if (r.get("status") or "").lower() in SPORTARR_DONE:
+            continue
+        ch = by_id.get(r.get("channelId"))
+        if ch is None:
+            problem = (f"Sportarr channel {r.get('channelId')}", NO_SUCH_SPORTARR_CHANNEL)
+        elif not loopback_target(ch.get("streamUrl")):
+            problem = (ch.get("name") or f"Sportarr channel {ch.get('id')}", NOT_DISPATCHARR)
+        else:
+            continue
+        if problem not in out:
+            out.append(problem)
+    return out

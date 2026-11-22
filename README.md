@@ -54,12 +54,21 @@ connection instead of opening another one: handy when a provider allows few conn
 record gets a 🔴 after its title and "🔴 Recording" in its description, from when it's scheduled until it ends.
 It works alongside Guide Titles: the two take turns, and the mark sits on top of the rewritten title.
 
-It reads recordings from Dispatcharr's own DVR, and from Sportarr when given its address and API key. Sportarr
-records through Dispatcharr's proxy like any other viewer, so its recordings never reach Dispatcharr's DVR; the
-plugin reads them from Sportarr's API and finds each one's Dispatcharr channel from the stream URL Sportarr has for
-it. It syncs when a channel starts or stops (Sportarr tuning in and hanging up) and on every M3U and EPG refresh.
-If Sportarr can't be reached, Dispatcharr's own recordings still sync. Reading Sportarr needs the "Access external
-network services" permission.
+It reads recordings from Dispatcharr's own DVR, and optionally from Sportarr. Sportarr records through
+Dispatcharr's proxy like any other viewer, so its recordings never reach Dispatcharr's DVR; the plugin reads them
+from Sportarr's API and finds each one's Dispatcharr channel from the stream URL Sportarr has for it. It syncs when
+a channel starts or stops (Sportarr tuning in and hanging up) and on every M3U and EPG refresh. If Sportarr can't
+be reached, Dispatcharr's own recordings still sync.
+
+To use Sportarr:
+
+1. Sportarr's channels must come from Dispatcharr's M3U, so their stream URLs are Dispatcharr proxy URLs
+   (`…/proxy/ts/stream/<uuid>`). A channel from anywhere else can't be matched.
+2. Approve "Access external network services" when installing or updating the plugin.
+3. Switch on **Use Sportarr's recordings too**, and under **Sportarr** set its address (such as
+   `http://192.168.1.10:1867`) and API key (Sportarr's Settings → General).
+4. Run **Test Sportarr**. It says whether Sportarr answered and accepted the key, how many recordings it has, how
+   many are on Dispatcharr channels, and names any channel that can't be matched and why.
 
 ### VOD Category Tidy
 
