@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Recording Piggyback",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a mark in the guide.",
   "author": "johnschult",
   "capabilities": [

@@ -117,9 +117,11 @@ SPORTARR_MAX_SPAN = timedelta(hours=8)
 @dataclass(frozen=True)
 class Window:
     uuid: str  # the Dispatcharr channel being recorded
-    start: datetime
+    start: datetime  # with Sportarr's padding: how long the recording holds the connection
     end: datetime
     status: str
+    show_start: datetime  # without it: the show itself, which is what gets the guide mark
+    show_end: datetime
 
 
 def _when(value):
@@ -147,9 +149,11 @@ def from_sportarr(recordings, channels):
         start, end = _when(r.get("scheduledStart")), _when(r.get("scheduledEnd"))
         if status in SPORTARR_DONE or not uuid or not start or not end:
             continue
-        start -= timedelta(minutes=r.get("prePadding") or 0)
-        end = min(end + timedelta(minutes=r.get("postPadding") or 0), start + SPORTARR_MAX_SPAN)
-        out.append(Window(uuid=uuid, start=start, end=end, status=status))
+        show_end = min(end, start + SPORTARR_MAX_SPAN)
+        padded_start = start - timedelta(minutes=r.get("prePadding") or 0)
+        padded_end = min(end + timedelta(minutes=r.get("postPadding") or 0), padded_start + SPORTARR_MAX_SPAN)
+        out.append(Window(uuid=uuid, start=padded_start, end=padded_end, status=status, show_start=start,
+                          show_end=show_end))
     return out
 
 

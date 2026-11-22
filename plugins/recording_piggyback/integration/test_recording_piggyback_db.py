@@ -229,9 +229,10 @@ class FakeSportarr:
         self.channels.append({"id": sportarr_id, "name": ch.name,
                               "streamUrl": f"http://192.168.68.115:9191/proxy/ts/stream/{ch.uuid}"})
 
-    def record(self, sportarr_id, start, end, status="Scheduled"):
+    def record(self, sportarr_id, start, end, status="Scheduled", pre=0, post=0):
         rec = {"id": len(self.recordings) + 1, "channelId": sportarr_id, "status": status,
-               "scheduledStart": start.isoformat(), "scheduledEnd": end.isoformat(), "prePadding": 0, "postPadding": 0}
+               "scheduledStart": start.isoformat(), "scheduledEnd": end.isoformat(), "prePadding": pre,
+               "postPadding": post}
         self.recordings.append(rec)
         return rec
 
@@ -421,3 +422,22 @@ def test_changing_the_mark_remarks_every_marked_programme(manager):
 def test_mark_is_a_setting_defaulting_to_small_caps_rec(manager):
     fields = {f["id"]: f for f in manager.get_plugin(KEY).fields}
     assert fields["mark"]["type"] == "string" and fields["mark"]["default"] == "\u0280\u1d07\u1d04"
+
+
+def test_show_straight_after_a_sportarr_game_is_not_marked(manager, sportarr):
+    ch = channel("Big Ten Network", epg_source())
+    start = timezone.now() + hours(2)
+    pregame = programme(ch, start - hours(0.5), "B1G Live")
+    game = programme(ch, start, "Purdue vs Oregon")
+    after = programme(ch, start + hours(1), "At the Net")
+    for p in (pregame, after):  # half-hour shows, the length that fits inside the padding
+        p.end_time = p.start_time + hours(0.5)
+        p.save()
+    sportarr.channel(181, ch)
+    sportarr.record(181, start, start + hours(1), pre=5, post=30)
+
+    manager.run_action(KEY, "sync")
+
+    assert refreshed(game)[0] == REC + "Purdue vs Oregon"
+    assert refreshed(after)[0] == "At the Net"
+    assert refreshed(pregame)[0] == "B1G Live"

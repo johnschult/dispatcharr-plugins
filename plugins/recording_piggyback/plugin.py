@@ -79,7 +79,8 @@ def _sportarr_recordings(settings):
     windows = from_sportarr(*data)
     channels = _dispatcharr_channels({w.uuid for w in windows})
     recs = [SimpleNamespace(channel=channels[w.uuid], channel_id=channels[w.uuid].id, start_time=w.start,
-                            end_time=w.end, status=w.status, source="Sportarr")
+                            end_time=w.end, status=w.status, source="Sportarr", show_start=w.show_start,
+                            show_end=w.show_end)
             for w in windows if w.uuid in channels]
     return recs, f" Sportarr: {len(recs)} scheduled or recording."
 
@@ -174,11 +175,13 @@ def _mark_guide(recordings, enabled, mark):
         for r in recordings:
             if not r.channel.epg_data_id:
                 continue
+            # Sportarr's padding runs into the shows either side of the game; mark the game itself
+            start, end = getattr(r, "show_start", r.start_time), getattr(r, "show_end", r.end_time)
             programs = ProgramData.objects.filter(
-                epg_id=r.channel.epg_data_id, start_time__lt=r.end_time, end_time__gt=r.start_time,
+                epg_id=r.channel.epg_data_id, start_time__lt=end, end_time__gt=start,
             )
             for prog in programs:
-                if overlaps(prog.start_time, prog.end_time, r.start_time, r.end_time):
+                if overlaps(prog.start_time, prog.end_time, start, end):
                     want.add(prog.id)
     changed = 0
     for prog in ProgramData.objects.filter(id__in=want):
