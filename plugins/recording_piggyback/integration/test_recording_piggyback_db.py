@@ -171,8 +171,9 @@ def test_guide_titles_on_an_already_marked_programme(manager):
     assert refreshed(game)[0] == "🏈  Ohio State vs Michigan"
 
 
-def test_sync_runs_on_recording_and_refresh_events(manager):
-    for event in ("recording_start", "recording_end", "channel_start", "m3u_refresh", "epg_refresh"):
+def test_sync_runs_on_recording_channel_and_refresh_events(manager):
+    # Sportarr records as an ordinary client: its start and end are a channel starting and stopping
+    for event in ("recording_start", "recording_end", "channel_start", "channel_stop", "m3u_refresh", "epg_refresh"):
         assert (KEY, "sync") in set(manager.iter_actions_for_event(event)), event
 
 
@@ -190,3 +191,124 @@ def test_waits_for_the_shared_lock(manager):
 
     assert not t.is_alive()
     assert refreshed(show)[0] == "SportsCenter" + DOT
+
+
+class FakeSportarr:
+    """Sportarr's two API endpoints, on a local port, answering only with the right API key."""
+
+    def __init__(self, key="sportarr-key"):
+        import json
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        self.key, self.recordings, self.channels = key, [], []
+        fake = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = {"/api/dvr/recordings": fake.recordings, "/api/iptv/channels": fake.channels}.get(self.path)
+                code = 401 if self.headers.get("X-Api-Key") != fake.key else 200 if body is not None else 404
+                data = json.dumps(body if code == 200 else {"error": code}).encode()
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def log_message(self, *args):
+                pass
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+
+    def channel(self, sportarr_id, ch):
+        self.channels.append({"id": sportarr_id, "name": ch.name,
+                              "streamUrl": f"http://192.168.68.115:9191/proxy/ts/stream/{ch.uuid}"})
+
+    def record(self, sportarr_id, start, end, status="Scheduled"):
+        rec = {"id": len(self.recordings) + 1, "channelId": sportarr_id, "status": status,
+               "scheduledStart": start.isoformat(), "scheduledEnd": end.isoformat(), "prePadding": 0, "postPadding": 0}
+        self.recordings.append(rec)
+        return rec
+
+    def close(self):
+        self.server.shutdown()
+
+
+import pytest
+
+
+@pytest.fixture
+def sportarr(manager):
+    fake = FakeSportarr()
+    settings_for(KEY, sportarr_url=fake.url, sportarr_api_key=fake.key)
+    yield fake
+    fake.close()
+
+
+def test_sportarr_recording_marks_its_programme(manager, sportarr):
+    ch = channel("Big Ten Network", epg_source())
+    start = timezone.now() + hours(2)
+    game = programme(ch, start, "Purdue vs Oregon")
+    sportarr.channel(181, ch)
+    rec = sportarr.record(181, start, start + hours(1))
+
+    result = manager.run_action(KEY, "sync")
+
+    assert result["status"] == "ok", result
+    assert refreshed(game) == ("Purdue vs Oregon" + DOT, "🔴 Recording\nBig game.")
+
+    rec["status"] = "Cancelled"
+    manager.run_action(KEY, "sync")
+    assert refreshed(game) == ("Purdue vs Oregon", "Big game.")
+
+
+def test_channel_sharing_the_feed_rides_a_sportarr_recording(manager, sportarr):
+    from apps.channels.models import ChannelStream, Stream
+
+    feed, other_feed = provider_streams("btn", "btn-backup")
+    recorded = channel("NCAA W Volleyball | Purdue", provider=[feed])
+    sharing = channel("Big Ten Network", provider=[other_feed, feed])
+    sportarr.channel(198, recorded)
+    now = timezone.now()
+    rec = sportarr.record(198, now - hours(0.5), now + hours(1), status="Recording")
+
+    manager.run_action(KEY, "sync")
+
+    first = ChannelStream.objects.filter(channel=sharing).order_by("order").select_related("stream").first()
+    assert first.stream.name == "Piggyback → NCAA W Volleyball | Purdue"
+    assert first.stream.url.endswith(f"/proxy/ts/stream/{recorded.uuid}")
+
+    rec["status"] = "Completed"
+    manager.run_action(KEY, "sync")
+    assert not Stream.objects.filter(name__startswith="Piggyback → ").exists()
+
+
+def test_sportarr_down_still_syncs_dispatcharr_recordings(manager):
+    settings_for(KEY, sportarr_url="http://127.0.0.1:9", sportarr_api_key="x")
+    ch = channel("ESPN", epg_source())
+    start = timezone.now() + hours(2)
+    show = programme(ch, start, "SportsCenter")
+    recording(ch, start, start + hours(1), "scheduled")
+
+    result = manager.run_action(KEY, "sync")
+
+    assert result["status"] == "ok", result
+    assert "Sportarr" in result["message"]
+    assert refreshed(show)[0] == "SportsCenter" + DOT
+
+
+def test_wrong_sportarr_key_is_reported_and_changes_nothing(manager, sportarr):
+    settings_for(KEY, sportarr_api_key="wrong")
+    ch = channel("Big Ten Network", epg_source())
+    start = timezone.now() + hours(2)
+    game = programme(ch, start, "Purdue vs Oregon")
+    sportarr.channel(181, ch)
+    sportarr.record(181, start, start + hours(1))
+
+    result = manager.run_action(KEY, "sync")
+
+    assert result["status"] == "ok", result
+    assert "401" in result["message"]
+    assert refreshed(game)[0] == "Purdue vs Oregon"
