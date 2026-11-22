@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from piggyback import (
     DESCRIPTION_LINE,
     PREFIX,
-    TITLE_MARK,
+    TITLE_PREFIX,
     Recorded,
     is_active,
     loopback_name,
@@ -39,16 +39,21 @@ def test_other_statuses_count_inside_their_window():
 
 # marked
 
-def test_mark_puts_the_dot_after_the_title_and_a_line_above_the_description():
+REC = "\u0280\u1d07\u1d04"  # small-caps REC, spelled out so a change to the mark is deliberate
+
+
+def test_mark_puts_small_caps_rec_before_the_title_and_a_line_above_the_description():
+    assert TITLE_PREFIX == REC + "\u00a0"
     assert marked("🏈  Ohio State vs Michigan", "Big game.") == (
-        "🏈  Ohio State vs Michigan" + TITLE_MARK,
+        f"{REC}\u00a0🏈  Ohio State vs Michigan",
         f"{DESCRIPTION_LINE}\nBig game.",
     )
+    assert DESCRIPTION_LINE == f"{REC} · Recording"
 
 
 def test_mark_with_no_description():
-    assert marked("News", None) == ("News" + TITLE_MARK, DESCRIPTION_LINE)
-    assert marked("News", "") == ("News" + TITLE_MARK, DESCRIPTION_LINE)
+    assert marked("News", None) == (TITLE_PREFIX + "News", DESCRIPTION_LINE)
+    assert marked("News", "") == (TITLE_PREFIX + "News", DESCRIPTION_LINE)
 
 
 def test_mark_twice_changes_nothing():
@@ -56,12 +61,20 @@ def test_mark_twice_changes_nothing():
     assert marked(*once) == once
 
 
-def test_mark_trims_trailing_space_before_the_dot():
-    assert marked("News  ", None)[0] == "News" + TITLE_MARK
+def test_mark_trims_leading_space_after_the_prefix():
+    assert marked("  News", None)[0] == TITLE_PREFIX + "News"
 
 
 def test_mark_with_no_title():
-    assert marked(None, None) == (TITLE_MARK, DESCRIPTION_LINE)
+    assert marked(None, None) == (REC, DESCRIPTION_LINE)
+
+
+def test_mark_can_be_any_text():
+    assert marked("News", "Today.", "⏺") == ("⏺\u00a0News", "⏺ · Recording\nToday.")
+
+
+def test_empty_mark_means_the_default():
+    assert marked("News", None, "") == marked("News", None) == marked("News", None, "  ")
 
 
 # overlaps
@@ -209,3 +222,25 @@ def test_sportarr_recording_without_padding_or_with_bad_times():
     bad = sportarr(id=2, start="soon", end=None)
     (w,) = from_sportarr([{**sportarr(), "prePadding": None, "postPadding": None}, bad], SPORTARR_CHANNELS)
     assert (w.start, w.end) == (T0, T0 + 2 * H)
+
+
+# Why a Sportarr recording can't be matched (for "Test Sportarr")
+
+from piggyback import NOT_DISPATCHARR, NO_SUCH_SPORTARR_CHANNEL, unmatched
+
+
+def test_every_recording_matched_means_nothing_to_report():
+    assert unmatched([sportarr(), sportarr(id=2, channel=198)], SPORTARR_CHANNELS) == []
+
+
+def test_channel_whose_stream_is_not_from_dispatcharr_is_named():
+    assert unmatched([sportarr(channel=7)], SPORTARR_CHANNELS) == [("Elsewhere", NOT_DISPATCHARR)]
+
+
+def test_recording_on_a_channel_sportarr_no_longer_lists():
+    assert unmatched([sportarr(channel=999)], SPORTARR_CHANNELS) == [("Sportarr channel 999", NO_SUCH_SPORTARR_CHANNEL)]
+
+
+def test_each_unmatched_channel_is_named_once_and_finished_recordings_are_ignored():
+    recs = [sportarr(id=1, channel=7), sportarr(id=2, channel=7), sportarr(id=3, channel=999, status="Completed")]
+    assert unmatched(recs, SPORTARR_CHANNELS) == [("Elsewhere", NOT_DISPATCHARR)]

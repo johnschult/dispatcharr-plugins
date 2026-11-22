@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Guide Titles",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rewrites programme titles in the guide by rule after each EPG refresh: moves the matchup into the title when the source puts only the sport there, turns \"at\" into \"vs\" and adds a sport emoji. Edits the source's own programmes in place and keeps the originals, so channels stay mapped to the real source and a rule that stops working leaves plain titles, never an empty guide.",
   "author": "johnschult",
   "capabilities": [],

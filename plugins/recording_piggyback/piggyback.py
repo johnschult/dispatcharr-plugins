@@ -22,19 +22,22 @@ def is_active(status, start, end, now):
     return start <= now <= end
 
 
-TITLE_MARK = "  🔴"  # same spacing Teamarr puts after its sport emoji
-DESCRIPTION_LINE = "🔴 Recording"
+REC = "\u0280\u1d07\u1d04"  # "REC" in small capitals: reads as a label, not as part of the title
+TITLE_PREFIX = REC + "\u00a0"  # a no-break space, so the mark never wraps away from the title
+DESCRIPTION_LINE = f"{REC} · Recording"
 
 
-def marked(title, description):
-    """Guide text for a program being recorded: the sport emoji stays first, the red dot goes at
-    the end so the two never sit together, and the description says it plainly."""
-    title = title or ""
-    if not title.endswith(TITLE_MARK):
-        title = title.rstrip() + TITLE_MARK
+def marked(title, description, mark=REC):
+    """Guide text for a program being recorded. The mark goes in front, where an app that cuts long
+    titles short still shows it, and the description says it plainly. An empty mark means REC."""
+    mark = (mark or "").strip() or REC
+    line = f"{mark} · Recording"
+    title = (title or "").strip()
+    if not title.startswith(mark):
+        title = f"{mark}\u00a0{title}" if title else mark
     description = description or ""
-    if not description.startswith(DESCRIPTION_LINE):
-        description = f"{DESCRIPTION_LINE}\n{description}" if description else DESCRIPTION_LINE
+    if not description.startswith(line):
+        description = f"{line}\n{description}" if description else line
     return title, description
 
 
@@ -147,4 +150,29 @@ def from_sportarr(recordings, channels):
         start -= timedelta(minutes=r.get("prePadding") or 0)
         end = min(end + timedelta(minutes=r.get("postPadding") or 0), start + SPORTARR_MAX_SPAN)
         out.append(Window(uuid=uuid, start=start, end=end, status=status))
+    return out
+
+
+NOT_DISPATCHARR = "its stream isn't from Dispatcharr"
+NO_SUCH_SPORTARR_CHANNEL = "Sportarr no longer lists the channel"
+NO_SUCH_DISPATCHARR_CHANNEL = "Dispatcharr has no such channel"
+
+
+def unmatched(recordings, channels):
+    """[(channel name, reason)] for the channels of unfinished Sportarr recordings that from_sportarr
+    has to skip, each named once, in the order first seen."""
+    by_id = {ch.get("id"): ch for ch in channels}
+    out = []
+    for r in recordings:
+        if (r.get("status") or "").lower() in SPORTARR_DONE:
+            continue
+        ch = by_id.get(r.get("channelId"))
+        if ch is None:
+            problem = (f"Sportarr channel {r.get('channelId')}", NO_SUCH_SPORTARR_CHANNEL)
+        elif not loopback_target(ch.get("streamUrl")):
+            problem = (ch.get("name") or f"Sportarr channel {ch.get('id')}", NOT_DISPATCHARR)
+        else:
+            continue
+        if problem not in out:
+            out.append(problem)
     return out

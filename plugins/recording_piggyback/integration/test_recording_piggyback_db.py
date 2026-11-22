@@ -5,7 +5,8 @@ from django.utils import timezone
 from helpers import HeldLock, hours, in_thread, settings_for
 
 KEY = "recording_piggyback"
-DOT = "\u00a0\u00a0🔴"  # what Piggyback puts after a recorded title
+REC = "\u0280\u1d07\u1d04\u00a0"  # what Piggyback puts before a recorded title
+REC_LINE = "\u0280\u1d07\u1d04 · Recording"
 
 
 def channel(name, source=None, provider=()):
@@ -56,7 +57,7 @@ def test_scheduled_recording_marks_its_programme(manager):
     result = manager.run_action(KEY, "sync")
 
     assert result["status"] == "ok", result
-    assert refreshed(show) == ("SportsCenter" + DOT, "🔴 Recording\nBig game.")
+    assert refreshed(show) == (REC + "SportsCenter", REC_LINE + "\nBig game.")
     assert refreshed(before) == ("Pregame", "Big game.")
 
 
@@ -140,12 +141,12 @@ def test_mark_sits_on_top_of_guide_titles(manager):
 
     manager.run_action("guide_titles", "apply")
     manager.run_action(KEY, "sync")
-    assert refreshed(game)[0] == rewritten + DOT
+    assert refreshed(game)[0] == REC + rewritten
 
     # A refresh runs both again, in either order; the mark and the rewrite both stay
     manager.run_action("guide_titles", "apply")
     manager.run_action(KEY, "sync")
-    assert refreshed(game)[0] == rewritten + DOT
+    assert refreshed(game)[0] == REC + rewritten
 
     rec.custom_properties = {"status": "cancelled"}
     rec.save()
@@ -163,7 +164,8 @@ def test_guide_titles_on_an_already_marked_programme(manager):
     settings_for("guide_titles", rules="[Schedules Direct]\nswap_subtitle::^College Football$::\n"
                  "prefix_sport::^College Football$::🏈\n")
     manager.run_action("guide_titles", "apply")
-    assert refreshed(game)[0] == "🏈  Ohio State vs Michigan" + DOT
+    manager.run_action(KEY, "sync")  # Guide Titles shows its rewrite unmarked; Piggyback marks it again
+    assert refreshed(game)[0] == REC + "🏈  Ohio State vs Michigan"
 
     rec.custom_properties = {"status": "cancelled"}
     rec.save()
@@ -190,7 +192,7 @@ def test_waits_for_the_shared_lock(manager):
     t.join(15)
 
     assert not t.is_alive()
-    assert refreshed(show)[0] == "SportsCenter" + DOT
+    assert refreshed(show)[0] == REC + "SportsCenter"
 
 
 class FakeSportarr:
@@ -201,11 +203,12 @@ class FakeSportarr:
         import threading
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-        self.key, self.recordings, self.channels = key, [], []
+        self.key, self.recordings, self.channels, self.requests = key, [], [], 0
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
+                fake.requests += 1
                 body = {"/api/dvr/recordings": fake.recordings, "/api/iptv/channels": fake.channels}.get(self.path)
                 code = 401 if self.headers.get("X-Api-Key") != fake.key else 200 if body is not None else 404
                 data = json.dumps(body if code == 200 else {"error": code}).encode()
@@ -242,7 +245,7 @@ import pytest
 @pytest.fixture
 def sportarr(manager):
     fake = FakeSportarr()
-    settings_for(KEY, sportarr_url=fake.url, sportarr_api_key=fake.key)
+    settings_for(KEY, use_sportarr=True, sportarr_url=fake.url, sportarr_api_key=fake.key)
     yield fake
     fake.close()
 
@@ -257,7 +260,7 @@ def test_sportarr_recording_marks_its_programme(manager, sportarr):
     result = manager.run_action(KEY, "sync")
 
     assert result["status"] == "ok", result
-    assert refreshed(game) == ("Purdue vs Oregon" + DOT, "🔴 Recording\nBig game.")
+    assert refreshed(game) == (REC + "Purdue vs Oregon", REC_LINE + "\nBig game.")
 
     rec["status"] = "Cancelled"
     manager.run_action(KEY, "sync")
@@ -286,7 +289,7 @@ def test_channel_sharing_the_feed_rides_a_sportarr_recording(manager, sportarr):
 
 
 def test_sportarr_down_still_syncs_dispatcharr_recordings(manager):
-    settings_for(KEY, sportarr_url="http://127.0.0.1:9", sportarr_api_key="x")
+    settings_for(KEY, use_sportarr=True, sportarr_url="http://127.0.0.1:9", sportarr_api_key="x")
     ch = channel("ESPN", epg_source())
     start = timezone.now() + hours(2)
     show = programme(ch, start, "SportsCenter")
@@ -296,7 +299,7 @@ def test_sportarr_down_still_syncs_dispatcharr_recordings(manager):
 
     assert result["status"] == "ok", result
     assert "Sportarr" in result["message"]
-    assert refreshed(show)[0] == "SportsCenter" + DOT
+    assert refreshed(show)[0] == REC + "SportsCenter"
 
 
 def test_wrong_sportarr_key_is_reported_and_changes_nothing(manager, sportarr):
@@ -312,3 +315,109 @@ def test_wrong_sportarr_key_is_reported_and_changes_nothing(manager, sportarr):
     assert result["status"] == "ok", result
     assert "401" in result["message"]
     assert refreshed(game)[0] == "Purdue vs Oregon"
+
+
+def test_sportarr_settings_sit_behind_a_switch_in_their_own_section(manager):
+    fields = {f["id"]: f for f in manager.get_plugin(KEY).fields}
+    assert fields["use_sportarr"]["type"] == "boolean" and fields["use_sportarr"]["default"] is False
+    assert "section" not in fields["use_sportarr"], "the switch stays visible"
+    assert fields["sportarr"]["type"] == "section" and fields["sportarr"]["collapsed"] is True
+    assert fields["sportarr_url"]["section"] == fields["sportarr_api_key"]["section"] == "sportarr"
+    assert fields["sportarr_api_key"]["input_type"] == "password"
+
+
+def test_switch_off_never_calls_sportarr(manager, sportarr):
+    settings_for(KEY, use_sportarr=False)
+    ch = channel("Big Ten Network", epg_source())
+    start = timezone.now() + hours(2)
+    game = programme(ch, start, "Purdue vs Oregon")
+    sportarr.channel(181, ch)
+    sportarr.record(181, start, start + hours(1))
+
+    result = manager.run_action(KEY, "sync")
+
+    assert sportarr.requests == 0
+    assert "Sportarr" not in result["message"]
+    assert refreshed(game)[0] == "Purdue vs Oregon"
+
+
+def test_switch_on_without_an_address_says_so(manager):
+    settings_for(KEY, use_sportarr=True, sportarr_url="", sportarr_api_key="")
+    for action in ("sync", "test_sportarr"):
+        result = manager.run_action(KEY, action)
+        assert "needs its address and API key" in result["message"], (action, result)
+
+
+def test_test_sportarr_counts_recordings_and_names_what_cannot_be_matched(manager, sportarr):
+    from apps.channels.models import Channel
+
+    btn, gone = channel("Big Ten Network"), channel("Old Pacers")
+    sportarr.channel(181, btn)
+    sportarr.channel(197, gone)
+    sportarr.channels.append({"id": 7, "name": "Somewhere Else", "streamUrl": "http://provider.example/1.ts"})
+    start = timezone.now() + hours(2)
+    for ch in (181, 181, 197, 7, 999):
+        sportarr.record(ch, start, start + hours(1))
+    sportarr.record(181, start, start + hours(1), status="Completed")
+    Channel.objects.filter(id=gone.id).delete()
+
+    result = manager.run_action(KEY, "test_sportarr")
+
+    assert result["status"] == "ok", result
+    message = result["message"]
+    assert "Sportarr answered: 5 recording(s) scheduled or running, 2 on Dispatcharr channels." in message
+    assert "Old Pacers: Dispatcharr has no such channel" in message
+    assert "Somewhere Else: its stream isn't from Dispatcharr" in message
+    assert "Sportarr channel 999: Sportarr no longer lists the channel" in message
+
+
+def test_test_sportarr_reports_a_refused_key_and_an_unreachable_address(manager, sportarr):
+    settings_for(KEY, sportarr_api_key="wrong")
+    assert "refused the API key" in manager.run_action(KEY, "test_sportarr")["message"]
+
+    settings_for(KEY, sportarr_url="http://127.0.0.1:9", sportarr_api_key=sportarr.key)
+    assert "Could not reach Sportarr at http://127.0.0.1:9" in manager.run_action(KEY, "test_sportarr")["message"]
+
+
+def test_status_includes_what_sportarr_is_recording(manager, sportarr):
+    ch = channel("Big Ten Network")
+    sportarr.channel(181, ch)
+    now = timezone.now()
+    sportarr.record(181, now - hours(0.5), now + hours(1), status="Recording")
+
+    message = manager.run_action(KEY, "status")["message"]
+
+    assert "Big Ten Network" in message and "(Sportarr)" in message
+
+
+def test_programme_marked_the_old_way_gets_the_new_mark(manager):
+    from apps.epg.models import ProgramData
+
+    ch = channel("ESPN", epg_source())
+    start = timezone.now() + hours(2)
+    show = programme(ch, start, "SportsCenter\u00a0\u00a0🔴", description="🔴 Recording\nBig game.")
+    ProgramData.objects.filter(id=show.id).update(
+        custom_properties={"piggyback_original": {"title": "SportsCenter", "description": "Big game."}})
+    recording(ch, start, start + hours(1), "scheduled")
+
+    manager.run_action(KEY, "sync")
+
+    assert refreshed(show) == (REC + "SportsCenter", REC_LINE + "\nBig game.")
+
+
+def test_changing_the_mark_remarks_every_marked_programme(manager):
+    ch = channel("ESPN", epg_source())
+    start = timezone.now() + hours(2)
+    show = programme(ch, start, "SportsCenter")
+    recording(ch, start, start + hours(1), "scheduled")
+    manager.run_action(KEY, "sync")
+
+    settings_for(KEY, mark="⏺")
+    manager.run_action(KEY, "sync")
+
+    assert refreshed(show) == ("⏺\u00a0SportsCenter", "⏺ · Recording\nBig game.")
+
+
+def test_mark_is_a_setting_defaulting_to_small_caps_rec(manager):
+    fields = {f["id"]: f for f in manager.get_plugin(KEY).fields}
+    assert fields["mark"]["type"] == "string" and fields["mark"]["default"] == "\u0280\u1d07\u1d04"

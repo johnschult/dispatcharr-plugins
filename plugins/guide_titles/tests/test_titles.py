@@ -123,28 +123,27 @@ def test_rewrite_follows_a_changed_rule_from_the_original():
     assert out_fields.title == f"🏆{NB}Ohio State at Michigan"
 
 
-# Recording Piggyback marks a program it records: two no-break spaces and "🔴" after the title,
-# "🔴 Recording" above the description, and the unmarked text in
-# custom_properties["piggyback_original"]. Spelled out here, not imported, so a drift between the
-# two plugins fails this test.
-PIGGYBACK_DOT = "\u00a0\u00a0🔴"
+# Recording Piggyback keeps a recorded programme's unmarked text in custom_properties["piggyback_original"]
+# and owns the mark itself. Guide Titles only keeps that copy in step with its rewrite and shows the
+# unmarked text; Piggyback puts its mark back on its next sync. So the mark here is arbitrary.
+SOME_MARK = "<whatever Piggyback shows> "
 
 
 def piggyback_marked(f):
     return (
-        Fields(f.title + PIGGYBACK_DOT, f.sub_title, f"🔴 Recording\n{f.description}"),
+        Fields(SOME_MARK + f.title, f.sub_title, f.description),
         {"piggyback_original": {"title": f.title, "description": f.description}},
     )
 
 
-def test_rewrite_under_a_recording_mark_keeps_the_mark():
+def test_rewrite_of_a_marked_programme_updates_piggybacks_copy_and_shows_it_unmarked():
     fields, props = rewrite(*piggyback_marked(RAW), FOOTBALL)
-    assert fields == Fields(DONE.title + PIGGYBACK_DOT, DONE.sub_title, f"🔴 Recording\n{DONE.description}")
+    assert fields == DONE
     assert props["piggyback_original"] == {"title": DONE.title, "description": DONE.description}
     assert props[ORIGINAL] == RAW._asdict()
 
 
-def test_mark_added_after_rewrite_is_left_alone():
+def test_marked_programme_whose_copy_already_has_the_rewrite_is_left_alone():
     fields, props = rewrite(RAW, {}, FOOTBALL)
     marked_fields, marked_props = piggyback_marked(fields)
     assert rewrite(marked_fields, {**props, **marked_props}, FOOTBALL) is None

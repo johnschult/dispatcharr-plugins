@@ -14,11 +14,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 try:
-    from .piggyback import (PREFIX, TERMINAL, Recorded, from_sportarr, is_active, loopback_name, loopback_target,
-                            marked, overlaps, plan)
+    from .piggyback import (NO_SUCH_DISPATCHARR_CHANNEL, PREFIX, SPORTARR_DONE, TERMINAL, Recorded, from_sportarr,
+                            is_active, loopback_name, loopback_target, marked, overlaps, plan, unmatched)
 except ImportError:  # loaded as a top-level module
-    from piggyback import (PREFIX, TERMINAL, Recorded, from_sportarr, is_active, loopback_name, loopback_target,
-                           marked, overlaps, plan)
+    from piggyback import (NO_SUCH_DISPATCHARR_CHANNEL, PREFIX, SPORTARR_DONE, TERMINAL, Recorded, from_sportarr,
+                           is_active, loopback_name, loopback_target, marked, overlaps, plan, unmatched)
 
 _MANIFEST = json.loads((Path(__file__).parent / "plugin.json").read_text(encoding="utf-8"))
 _DEFAULTS = {f["id"]: f.get("default") for f in _MANIFEST["fields"]}
@@ -45,26 +45,65 @@ def _sportarr_get(settings, path):
         return json.load(resp)
 
 
+NEEDS_SETTINGS = "Sportarr needs its address and API key."
+
+
+def _read_sportarr(settings):
+    """(recordings, channels) from Sportarr's API, or (None, why not) when it can't be read."""
+    url = (settings.get("sportarr_url") or "").rstrip("/")
+    if not url or not settings.get("sportarr_api_key"):
+        return None, NEEDS_SETTINGS
+    try:
+        return (_sportarr_get(settings, "/api/dvr/recordings"), _sportarr_get(settings, "/api/iptv/channels")), ""
+    except urllib.error.HTTPError as e:
+        why = "Sportarr refused the API key (401)." if e.code == 401 else f"Sportarr answered {e.code} at {url}."
+    except Exception as e:
+        why = f"Could not reach Sportarr at {url}: {type(e).__name__}."
+    log.warning("Recording Piggyback: %s", why)
+    return None, why
+
+
+def _dispatcharr_channels(uuids):
+    from apps.channels.models import Channel
+    return {str(c.uuid).lower(): c for c in Channel.objects.filter(uuid__in=uuids)}
+
+
 def _sportarr_recordings(settings):
     """Sportarr's unfinished recordings, shaped like Dispatcharr's (channel, start_time, end_time,
     status), plus a note for the sync message. Sportarr being down never stops a sync."""
-    if not settings.get("sportarr_url"):
+    if not settings.get("use_sportarr"):
         return [], ""
-    try:
-        windows = from_sportarr(_sportarr_get(settings, "/api/dvr/recordings"),
-                                _sportarr_get(settings, "/api/iptv/channels"))
-    except urllib.error.HTTPError as e:
-        log.warning("Recording Piggyback: Sportarr answered %s", e.code)
-        return [], f" Sportarr answered {e.code}."
-    except Exception as e:
-        log.warning("Recording Piggyback: could not read Sportarr: %s", e)
-        return [], f" Could not read Sportarr: {type(e).__name__}."
-    from apps.channels.models import Channel
-    channels = {str(c.uuid).lower(): c for c in Channel.objects.filter(uuid__in={w.uuid for w in windows})}
+    data, why = _read_sportarr(settings)
+    if data is None:
+        return [], f" {why}"
+    windows = from_sportarr(*data)
+    channels = _dispatcharr_channels({w.uuid for w in windows})
     recs = [SimpleNamespace(channel=channels[w.uuid], channel_id=channels[w.uuid].id, start_time=w.start,
-                            end_time=w.end, status=w.status)
+                            end_time=w.end, status=w.status, source="Sportarr")
             for w in windows if w.uuid in channels]
     return recs, f" Sportarr: {len(recs)} scheduled or recording."
+
+
+def test_sportarr(settings):
+    if not settings.get("use_sportarr"):
+        return "Sportarr is switched off."
+    data, why = _read_sportarr(settings)
+    if data is None:
+        return why
+    recordings, sportarr_channels = data
+    windows = from_sportarr(recordings, sportarr_channels)
+    found = _dispatcharr_channels({w.uuid for w in windows})
+    problems = unmatched(recordings, sportarr_channels)
+    names = {uuid: ch.get("name") for ch in sportarr_channels if (uuid := loopback_target(ch.get("streamUrl")))}
+    for w in windows:
+        problem = (names.get(w.uuid) or w.uuid, NO_SUCH_DISPATCHARR_CHANNEL)
+        if w.uuid not in found and problem not in problems:
+            problems.append(problem)
+    matched = sum(1 for w in windows if w.uuid in found)
+    total = sum(1 for r in recordings if (r.get("status") or "").lower() not in SPORTARR_DONE)
+    lines = [f"Sportarr answered: {total} recording(s) scheduled or running, {matched} on Dispatcharr channels."]
+    lines += [f"Not matched: {name}: {reason}" for name, reason in problems]
+    return "\n".join(lines)
 
 
 def _active_recordings(now, sportarr=()):
@@ -126,7 +165,7 @@ def _apply(p, base_url):
         ChannelStream.objects.create(channel_id=channel_id, stream=stream, order=0)
 
 
-def _mark_guide(recordings, enabled):
+def _mark_guide(recordings, enabled, mark):
     """Mark programs overlapping each recording on the recorded channel; restore the rest.
     Returns how many programs changed."""
     from apps.epg.models import ProgramData
@@ -144,10 +183,15 @@ def _mark_guide(recordings, enabled):
     changed = 0
     for prog in ProgramData.objects.filter(id__in=want):
         props = dict(prog.custom_properties or {})
-        if ORIGINAL in props:
+        # Marked from the kept original every time, so a mark from an older version, or a title
+        # Guide Titles has just rewritten (it updates our copy and shows its text unmarked), gets
+        # the current mark back
+        original = props.get(ORIGINAL) or {"title": prog.title, "description": prog.description}
+        title, description = marked(original.get("title"), original.get("description"), mark)
+        if ORIGINAL in props and (prog.title, prog.description) == (title, description):
             continue
-        props[ORIGINAL] = {"title": prog.title, "description": prog.description}
-        prog.title, prog.description = marked(prog.title, prog.description)
+        props[ORIGINAL] = original
+        prog.title, prog.description = title, description
         prog.custom_properties = props
         prog.save(update_fields=["title", "description", "custom_properties"])
         changed += 1
@@ -183,7 +227,8 @@ def sync(settings):
             from apps.channels.models import Stream
             Stream.objects.filter(id__in=strays).delete()
         _apply(p, get_dvr_stream_base_url())
-        guide = _mark_guide(_scheduled_recordings(now, sportarr), settings.get("mark_guide", True))
+        guide = _mark_guide(_scheduled_recordings(now, sportarr), settings.get("mark_guide", True),
+                            settings.get("mark"))
     if guide:
         try:
             from apps.output.streaming_chunk_cache import invalidate_epg_chunk_cache
@@ -209,7 +254,9 @@ def status(settings):
             for c in Channel.objects.filter(id__in=[cid for cid, links in existing.items()
                                                      if any(u == str(r.channel.uuid).lower() for _, u in links)])
         )
-        lines.append(f"🔴 {int(r.channel.channel_number or 0)} {r.channel.name} (until {timezone.localtime(r.end_time):%H:%M})"
+        source = f" ({r.source})" if getattr(r, "source", None) else ""
+        lines.append(f"🔴 {int(r.channel.channel_number or 0)} {r.channel.name}{source} "
+                     f"(until {timezone.localtime(r.end_time):%H:%M})"
                      + (f"\n   riding it: {', '.join(riders)}" if riders else "\n   no other channel carries its stream"))
     return "\n".join(lines) or "Nothing is recording right now."
 
@@ -226,6 +273,8 @@ class Plugin:
         try:
             if action == "status":
                 return {"status": "ok", "message": status(settings)}
+            if action == "test_sportarr":
+                return {"status": "ok", "message": test_sportarr(settings)}
             if action != "sync":
                 return {"status": "error", "message": f"Unknown action {action!r}"}
             event = (params or {}).get("event")

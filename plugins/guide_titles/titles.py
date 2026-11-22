@@ -17,10 +17,9 @@ MATCHUP_AT = re.compile(r"^(.+?) at (.+)$")
 SECTION = re.compile(r"^\[(.+)\]$")
 KINDS = {"swap_subtitle", "swap_description", "regex", "replace", "prefix_sport"}
 
-# Recording Piggyback's guide mark (see its piggyback.py)
+# Where Recording Piggyback keeps a recorded programme's unmarked text. Piggyback owns its mark and
+# puts it back on every sync, so Guide Titles never needs to know what the mark looks like.
 PIGGYBACK = "piggyback_original"
-MARK_TITLE = "\u00a0\u00a0🔴"  # no-break spaces, exactly as Piggyback writes it
-MARK_DESCRIPTION = "🔴 Recording"
 
 
 class Fields(NamedTuple):
@@ -153,12 +152,11 @@ def rewrite(current, props, rules):
     else:
         props[ORIGINAL] = original._asdict()
     if _marked(props):
-        # Piggyback restores from its copy when the recording ends, so that copy gets our text,
-        # and the shown text keeps its mark on top of ours.
-        props[PIGGYBACK] = {**props[PIGGYBACK], "title": shown.title, "description": shown.description}
-        shown = Fields(
-            (shown.title or "").rstrip() + MARK_TITLE,
-            shown.sub_title,
-            f"{MARK_DESCRIPTION}\n{shown.description}" if shown.description else MARK_DESCRIPTION,
-        )
+        # Piggyback restores from its copy when the recording ends, so the copy gets our text. While
+        # the copy already has it, the shown text is Piggyback's (marked) and stays; otherwise we
+        # show ours unmarked, and Piggyback's next sync, in the same refresh, marks it again.
+        copy = {**props[PIGGYBACK], "title": shown.title, "description": shown.description}
+        if copy == props[PIGGYBACK] and props == before:
+            return None
+        props[PIGGYBACK] = copy
     return None if shown == current and props == before else (shown, props)
