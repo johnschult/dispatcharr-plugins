@@ -68,7 +68,7 @@ To use Sportarr:
 1. Sportarr's channels must come from Dispatcharr's M3U, so their stream URLs are Dispatcharr proxy URLs
    (`…/proxy/ts/stream/<uuid>`). A channel from anywhere else can't be matched.
 2. Approve "Access external network services" when installing or updating the plugin.
-3. Switch on **Use Sportarr's recordings too**, and under **Sportarr** set its address (such as
+3. Under **Sportarr**, switch on **Use Sportarr's recordings too** and set its address (such as
    `http://192.168.1.10:1867`) and API key (Sportarr's Settings → General).
 4. Run **Test Sportarr**. It says whether Sportarr answered and accepted the key, how many recordings it has, how
    many are on Dispatcharr channels, and names any channel that can't be matched and why.

@@ -321,7 +321,9 @@ def test_wrong_sportarr_key_is_reported_and_changes_nothing(manager, sportarr):
 def test_sportarr_settings_sit_behind_a_switch_in_their_own_section(manager):
     fields = {f["id"]: f for f in manager.get_plugin(KEY).fields}
     assert fields["use_sportarr"]["type"] == "boolean" and fields["use_sportarr"]["default"] is False
-    assert "section" not in fields["use_sportarr"], "the switch stays visible"
+    assert fields["use_sportarr"]["section"] == "sportarr"
+    in_section = [f["id"] for f in manager.get_plugin(KEY).fields if f.get("section") == "sportarr"]
+    assert in_section == ["use_sportarr", "sportarr_url", "sportarr_api_key"], "the switch comes first"
     assert fields["sportarr"]["type"] == "section" and fields["sportarr"]["collapsed"] is True
     assert fields["sportarr_url"]["section"] == fields["sportarr_api_key"]["section"] == "sportarr"
     assert fields["sportarr_api_key"]["input_type"] == "password"
