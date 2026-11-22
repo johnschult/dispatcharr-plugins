@@ -188,8 +188,16 @@ def sportarr(id=1, channel=181, status="Scheduled", start="2026-11-18T19:00:00Z"
 def test_sportarr_recording_becomes_its_dispatcharr_channel_and_padded_window():
     assert from_sportarr([sportarr()], SPORTARR_CHANNELS) == [
         Window(uuid=UUID_A.lower(), start=T0 - timedelta(minutes=5), end=T0 + 2 * H + timedelta(minutes=30),
-               status="scheduled"),
+               status="scheduled", show_start=T0, show_end=T0 + 2 * H),
     ]
+
+
+def test_the_shows_own_times_are_kept_apart_from_the_padding():
+    # The padding is how long the recording holds the connection; the show itself is what gets the
+    # guide mark, or a half-hour show straight after the game would be marked too
+    (w,) = from_sportarr([sportarr(pre=10, post=60)], SPORTARR_CHANNELS)
+    assert (w.show_start, w.show_end) == (T0, T0 + 2 * H)
+    assert (w.start, w.end) == (T0 - timedelta(minutes=10), T0 + 3 * H)
 
 
 def test_sportarr_channel_found_by_its_stream_url_not_its_name():
@@ -216,6 +224,7 @@ def test_sportarr_window_is_capped():
     # the channel's next 24 hours of programmes
     (w,) = from_sportarr([sportarr(end="2026-11-19T19:00:00Z", post=0)], SPORTARR_CHANNELS)
     assert w.end - w.start == timedelta(hours=8)
+    assert w.show_end - w.show_start == timedelta(hours=8)
 
 
 def test_sportarr_recording_without_padding_or_with_bad_times():
