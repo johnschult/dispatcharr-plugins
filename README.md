@@ -51,8 +51,11 @@ The default rules cover the common sports in Schedules Direct and EPG Share titl
 
 While a channel records, other channels carrying the same provider stream play through the recording's
 connection instead of opening another one: handy when a provider allows few connections. A programme set to
-record gets a 🔴 after its title and "🔴 Recording" in its description, from when it's scheduled until it ends.
-It works alongside Guide Titles: the two take turns, and the mark sits on top of the rewritten title.
+record gets a mark in front of its title, `ʀᴇᴄ` (small capitals) unless set otherwise, and "ʀᴇᴄ · Recording" above
+its description, from when it's scheduled until it ends. Changing the mark re-marks every marked programme at the
+next sync. It works alongside Guide Titles: when Guide Titles rewrites a marked programme it updates Piggyback's
+copy of the original, and Piggyback puts its mark back on its next sync, so neither needs to know the other's
+format.
 
 It reads recordings from Dispatcharr's own DVR, and optionally from Sportarr. Sportarr records through
 Dispatcharr's proxy like any other viewer, so its recordings never reach Dispatcharr's DVR; the plugin reads them

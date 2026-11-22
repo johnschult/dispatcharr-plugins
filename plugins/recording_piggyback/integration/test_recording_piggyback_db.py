@@ -5,7 +5,8 @@ from django.utils import timezone
 from helpers import HeldLock, hours, in_thread, settings_for
 
 KEY = "recording_piggyback"
-DOT = "\u00a0\u00a0🔴"  # what Piggyback puts after a recorded title
+REC = "\u0280\u1d07\u1d04\u00a0"  # what Piggyback puts before a recorded title
+REC_LINE = "\u0280\u1d07\u1d04 · Recording"
 
 
 def channel(name, source=None, provider=()):
@@ -56,7 +57,7 @@ def test_scheduled_recording_marks_its_programme(manager):
     result = manager.run_action(KEY, "sync")
 
     assert result["status"] == "ok", result
-    assert refreshed(show) == ("SportsCenter" + DOT, "🔴 Recording\nBig game.")
+    assert refreshed(show) == (REC + "SportsCenter", REC_LINE + "\nBig game.")
     assert refreshed(before) == ("Pregame", "Big game.")
 
 
@@ -140,12 +141,12 @@ def test_mark_sits_on_top_of_guide_titles(manager):
 
     manager.run_action("guide_titles", "apply")
     manager.run_action(KEY, "sync")
-    assert refreshed(game)[0] == rewritten + DOT
+    assert refreshed(game)[0] == REC + rewritten
 
     # A refresh runs both again, in either order; the mark and the rewrite both stay
     manager.run_action("guide_titles", "apply")
     manager.run_action(KEY, "sync")
-    assert refreshed(game)[0] == rewritten + DOT
+    assert refreshed(game)[0] == REC + rewritten
 
     rec.custom_properties = {"status": "cancelled"}
     rec.save()
@@ -163,7 +164,8 @@ def test_guide_titles_on_an_already_marked_programme(manager):
     settings_for("guide_titles", rules="[Schedules Direct]\nswap_subtitle::^College Football$::\n"
                  "prefix_sport::^College Football$::🏈\n")
     manager.run_action("guide_titles", "apply")
-    assert refreshed(game)[0] == "🏈  Ohio State vs Michigan" + DOT
+    manager.run_action(KEY, "sync")  # Guide Titles shows its rewrite unmarked; Piggyback marks it again
+    assert refreshed(game)[0] == REC + "🏈  Ohio State vs Michigan"
 
     rec.custom_properties = {"status": "cancelled"}
     rec.save()
@@ -190,7 +192,7 @@ def test_waits_for_the_shared_lock(manager):
     t.join(15)
 
     assert not t.is_alive()
-    assert refreshed(show)[0] == "SportsCenter" + DOT
+    assert refreshed(show)[0] == REC + "SportsCenter"
 
 
 class FakeSportarr:
@@ -258,7 +260,7 @@ def test_sportarr_recording_marks_its_programme(manager, sportarr):
     result = manager.run_action(KEY, "sync")
 
     assert result["status"] == "ok", result
-    assert refreshed(game) == ("Purdue vs Oregon" + DOT, "🔴 Recording\nBig game.")
+    assert refreshed(game) == (REC + "Purdue vs Oregon", REC_LINE + "\nBig game.")
 
     rec["status"] = "Cancelled"
     manager.run_action(KEY, "sync")
@@ -297,7 +299,7 @@ def test_sportarr_down_still_syncs_dispatcharr_recordings(manager):
 
     assert result["status"] == "ok", result
     assert "Sportarr" in result["message"]
-    assert refreshed(show)[0] == "SportsCenter" + DOT
+    assert refreshed(show)[0] == REC + "SportsCenter"
 
 
 def test_wrong_sportarr_key_is_reported_and_changes_nothing(manager, sportarr):
@@ -386,3 +388,36 @@ def test_status_includes_what_sportarr_is_recording(manager, sportarr):
     message = manager.run_action(KEY, "status")["message"]
 
     assert "Big Ten Network" in message and "(Sportarr)" in message
+
+
+def test_programme_marked_the_old_way_gets_the_new_mark(manager):
+    from apps.epg.models import ProgramData
+
+    ch = channel("ESPN", epg_source())
+    start = timezone.now() + hours(2)
+    show = programme(ch, start, "SportsCenter\u00a0\u00a0🔴", description="🔴 Recording\nBig game.")
+    ProgramData.objects.filter(id=show.id).update(
+        custom_properties={"piggyback_original": {"title": "SportsCenter", "description": "Big game."}})
+    recording(ch, start, start + hours(1), "scheduled")
+
+    manager.run_action(KEY, "sync")
+
+    assert refreshed(show) == (REC + "SportsCenter", REC_LINE + "\nBig game.")
+
+
+def test_changing_the_mark_remarks_every_marked_programme(manager):
+    ch = channel("ESPN", epg_source())
+    start = timezone.now() + hours(2)
+    show = programme(ch, start, "SportsCenter")
+    recording(ch, start, start + hours(1), "scheduled")
+    manager.run_action(KEY, "sync")
+
+    settings_for(KEY, mark="⏺")
+    manager.run_action(KEY, "sync")
+
+    assert refreshed(show) == ("⏺\u00a0SportsCenter", "⏺ · Recording\nBig game.")
+
+
+def test_mark_is_a_setting_defaulting_to_small_caps_rec(manager):
+    fields = {f["id"]: f for f in manager.get_plugin(KEY).fields}
+    assert fields["mark"]["type"] == "string" and fields["mark"]["default"] == "\u0280\u1d07\u1d04"

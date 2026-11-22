@@ -165,7 +165,7 @@ def _apply(p, base_url):
         ChannelStream.objects.create(channel_id=channel_id, stream=stream, order=0)
 
 
-def _mark_guide(recordings, enabled):
+def _mark_guide(recordings, enabled, mark):
     """Mark programs overlapping each recording on the recorded channel; restore the rest.
     Returns how many programs changed."""
     from apps.epg.models import ProgramData
@@ -183,10 +183,15 @@ def _mark_guide(recordings, enabled):
     changed = 0
     for prog in ProgramData.objects.filter(id__in=want):
         props = dict(prog.custom_properties or {})
-        if ORIGINAL in props:
+        # Marked from the kept original every time, so a mark from an older version, or a title
+        # Guide Titles has just rewritten (it updates our copy and shows its text unmarked), gets
+        # the current mark back
+        original = props.get(ORIGINAL) or {"title": prog.title, "description": prog.description}
+        title, description = marked(original.get("title"), original.get("description"), mark)
+        if ORIGINAL in props and (prog.title, prog.description) == (title, description):
             continue
-        props[ORIGINAL] = {"title": prog.title, "description": prog.description}
-        prog.title, prog.description = marked(prog.title, prog.description)
+        props[ORIGINAL] = original
+        prog.title, prog.description = title, description
         prog.custom_properties = props
         prog.save(update_fields=["title", "description", "custom_properties"])
         changed += 1
@@ -222,7 +227,8 @@ def sync(settings):
             from apps.channels.models import Stream
             Stream.objects.filter(id__in=strays).delete()
         _apply(p, get_dvr_stream_base_url())
-        guide = _mark_guide(_scheduled_recordings(now, sportarr), settings.get("mark_guide", True))
+        guide = _mark_guide(_scheduled_recordings(now, sportarr), settings.get("mark_guide", True),
+                            settings.get("mark"))
     if guide:
         try:
             from apps.output.streaming_chunk_cache import invalidate_epg_chunk_cache

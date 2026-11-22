@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Recording Piggyback",
   "version": "0.2.1",
-  "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a red dot in the guide.",
+  "description": "While a channel is recording, in Dispatcharr's DVR or by Sportarr, other channels carrying the same provider stream play through the recording's connection instead of opening another one, and the recorded program gets a mark in the guide.",
   "author": "johnschult",
   "capabilities": [
     "outbound_network"
@@ -13,7 +13,14 @@
       "label": "Mark recordings in the guide",
       "type": "boolean",
       "default": true,
-      "help_text": "Adds a red dot to the end of the title of a program set to record (from when it is scheduled, so apps that reload the guide hourly show it in time), and \"🔴 Recording\" to its description. Restored when the recording finishes or is cancelled."
+      "help_text": "Puts the recording mark (below) in front of the title of a program set to record (from when it is scheduled, so apps that reload the guide hourly show it in time), and \"<mark> · Recording\" above its description. Restored when the recording finishes or is cancelled."
+    },
+    {
+      "id": "mark",
+      "label": "Recording mark",
+      "type": "string",
+      "default": "ʀᴇᴄ",
+      "help_text": "Text put in front of a recorded program's title, such as ʀᴇᴄ (small capitals, the default), ⏺ or 📹. Changing it re-marks every marked program at the next sync."
     },
     {
       "id": "skip_groups",
@@ -27,7 +34,7 @@
       "label": "Use Sportarr's recordings too",
       "type": "boolean",
       "default": false,
-      "help_text": "Sportarr records through Dispatcharr like any other viewer, so its recordings never reach Dispatcharr's DVR. Switch this on, and set Sportarr's address and API key under Sportarr below, to give them the same piggybacks and red dots."
+      "help_text": "Sportarr records through Dispatcharr like any other viewer, so its recordings never reach Dispatcharr's DVR. Switch this on, and set Sportarr's address and API key under Sportarr below, to give them the same piggybacks and guide marks."
     },
     {
       "id": "sportarr",
